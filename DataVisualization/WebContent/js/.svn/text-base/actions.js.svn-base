@@ -1,0 +1,914 @@
+//定义主菜单中的菜单项
+
+var actHome = new Ext.Action({
+    text: '首页',
+    handler: function(){  
+        	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get('centerFrame').dom.src='welcome.jsp';
+            document.title = "首页";  
+            SetCookie("pagePath", 'welcome.jsp');
+              
+       			        			     	  
+
+    }
+    ,iconCls: 'ic_home'
+});
+
+var actKickstart = new Ext.Action({
+    text: '应急值守',
+    iconCls: 'ic_emergency',
+    handler: function(){
+    	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'page/EmergencyDuty.html';
+        document.title = '应急值守 ';
+        SetCookie("pagePath", 'page/EmergencyDuty.html');
+        
+                			     	  
+        
+    }
+});
+
+var departmentReport = new Ext.Action({
+    text: '科室事故上报',
+    iconCls: 'ic_caseDepartment',
+    handler: function(){
+    	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'depup/page/department_report_main.jsp';
+        document.title = '科室信息上报 ';
+        SetCookie("pagePath", 'depup/page/department_report_main.jsp');
+        
+                			     	  
+        
+    }
+});
+
+var dangerReport = new Ext.Action({
+    text: '危险源处事故上报',
+    iconCls: 'ic_caseDanger',
+    handler: function(){
+    	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'danger/page/danger_report_main.jsp';
+        document.title = '危险源上报事故 ';
+        SetCookie("pagePath", 'danger/page/danger_report_main.jsp');
+        
+                			     	  
+        
+    }
+});
+
+var reportPlatformConfiguration = new Ext.menu.Menu({
+	id:'reportPlatformConfiguration',
+	items:[{
+		text: '科室事故上报',
+    iconCls: 'ic_caseDepartment',
+    handler: function(){
+    	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'depup/page/department_report_main.jsp';
+        document.title = '科室信息上报 ';
+        SetCookie("pagePath", 'depup/page/department_report_main.jsp');
+        
+                			     	  
+        
+    }
+     } ,{
+     	text: '危险源上报事故',
+    iconCls: 'ic_caseDanger',
+    handler: function(){
+    	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'danger/page/danger_report_main.jsp';
+        document.title = '危险源上报事故 ';
+        SetCookie("pagePath", 'danger/page/danger_report_main.jsp');
+        
+                			     	  
+        
+    }
+     }]
+});   
+var reportPlatform  = new Ext.Action({  
+        text: '事故上报'  
+        ,iconCls: 'ic_caseReport'  
+        ,menu:reportPlatformConfiguration
+});
+var reportPlatformDep  = new Ext.Action({  
+        text: '科室事故上报'  
+        ,iconCls: 'ic_caseReport',  
+        handler: function(){
+    	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'depup/page/department_report_main.jsp';
+        document.title = '科室事故上报 ';
+        SetCookie("pagePath", 'depup/page/department_report_main.jsp');
+        
+                			     	  
+        
+    }
+});
+
+var dataGraph= new Ext.menu.Menu({
+	id:'dataGraph',
+	items:[{
+		text:'事故概况统计',
+		iconCls: 'ic_caseWholeCount',
+		handler:function(){
+	    	if (document.body.offsetWidth != screen.availWidth) {
+	        	window.moveTo(0,0)
+	            window.resizeTo(screen.availWidth,screen.availHeight);
+			}
+	    	Ext.get('centerFrame').dom.src='statistic/statisticindex.jsp';
+	    	document.title = "数据图形化";  
+	    	SetCookie("pagePath", 'statistic/statisticindex.jsp');
+	    	
+       		 
+       		
+//        	
+	    }
+	},{
+		text: '详细信息统计和报表',
+	    iconCls: 'ic_caseDetailCount',
+	    handler: function(){
+	    	window.moveTo(-4,-4)
+	            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+	        Ext.get("centerFrame").dom.src = 'page/StatisticsTest.jsp';
+	        document.title = '详细信息统计和报表';
+	        SetCookie("pagePath", 'page/StatisticsTest.jsp');
+	        
+	                			     	  
+	        
+	    }
+	}]
+	
+})
+var caseStatisticsNew = new Ext.Action({
+    text: '数据统计和报表',
+    iconCls: 'ic_statistic',
+    menu:dataGraph
+});
+
+var commandCenter = new Ext.Action({
+    text: '应急指挥中心',
+    iconCls: 'ic_basicmonitor',
+    handler: function(){
+    	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'page/CenterEventList.html';
+        document.title = '应急指挥中心 ';
+        SetCookie("pagePath", 'page/CenterEventList.html');
+        
+                			     	  
+        
+    }
+});
+
+//var departmentTask = new Ext.Action({
+//    text: '部门任务执行',
+//    iconCls: 'ic_basicdepartment',
+//    handler: function(){
+//    	window.moveTo(-4,-4)
+//            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+//        Ext.get("centerFrame").dom.src = 'page/departmentTask.html';
+//        document.title = '部门任务执行 ';
+////        
+////                			     	  
+//        
+//    }
+//});
+//8.26_ctt_add department view page
+var menuDepTask = new Ext.menu.Menu({
+	id:'menuDepTask'
+	,items:[{
+	    text: '任务列表方式',
+        iconCls: 'ic_home',
+        handler: function(){
+    	    window.moveTo(-4,-4)
+                window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'page/departmentTask.html';
+            document.title = '部门任务执行 ';
+            SetCookie("pagePath", 'page/departmentTask.html');
+        }
+    },{
+    	text: '任务流程图方式',
+    	 iconCls: 'ic_chartview'
+    	,handler:function(){
+    		window.moveTo(-4,-4)
+                window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'page/departmentTaskView.html';
+            document.title = '部门任务执行可视化 ';
+            SetCookie("pagePath", 'page/departmentTaskView.html');
+    	}
+    }]
+});
+var departmentTask = new Ext.Action({
+    text: '部门任务执行'  
+    ,iconCls: 'ic_basicdepartment'  
+    ,menu:menuDepTask
+});
+var metaDataManageMenu1 = new Ext.menu.Menu({
+	items:[{
+		text:'数据表共享配置',
+		iconCls:'ic_SqlTable',
+		handler : function() {
+		     Ext.get('centerFrame').dom.src = 'page/tableShareDispose.jsp';
+		     document.title = "数据表共享配置";
+		     SetCookie("pagePath", 'page/tableShareDispose.jsp');
+	    }
+	},{
+		text:'数据项共享配置',
+		iconCls: 'ic_caseDetailCount',
+		handler : function() {
+		     Ext.get('centerFrame').dom.src = 'page/itemShareDispose.jsp';
+		     document.title = "数据项共享配置";
+		     SetCookie("pagePath", 'page/itemShareDispose.jsp');
+	    }
+	},{
+		text:'数据共享申请',
+		iconCls: 'ic_apply',
+		menu:[{
+			text:'数据表共享申请',
+			iconCls:'ic_SqlTable',
+			handler:function(){
+			     Ext.get('centerFrame').dom.src = 'page/tableShareApplication.jsp';
+		         document.title = "数据表共享申请";
+		         SetCookie("pagePath", 'page/tableShareApplication.jsp');
+		    }
+		},{
+			text:'数据项共享申请',
+			iconCls: 'ic_caseDetailCount',
+			handler:function(){
+			     Ext.get('centerFrame').dom.src = 'page/itemShareApplication.jsp';
+		         document.title = "数据项共享申请";
+		         SetCookie("pagePath", 'page/itemShareApplication.jsp');
+		    }
+		}]
+		
+	},{
+		text:'数据共享审批',
+		iconCls: 'ic_decision',
+		menu:[{
+			text:'数据表共享审批',
+			iconCls:'ic_SqlTable',
+			handler:function(){
+		         Ext.get('centerFrame').dom.src = 'page/tableShareApproval.jsp';
+		         document.title = "数据表共享审批";
+		         SetCookie("pagePath",'page/tableShareApproval.jsp');
+		    }
+		},{
+			text:'数据项共享审批',
+			iconCls: 'ic_caseDetailCount',
+			handler:function(){
+		         Ext.get('centerFrame').dom.src = 'page/itemShareApproval.jsp';
+		         document.title = "数据项共享审批";
+		         SetCookie("pagePath", 'page/itemShareApproval.jsp');
+		    }
+		}]
+		
+	},{
+		text:'共享数据查看',
+		iconCls: 'ic_view',
+		handler:function(){
+		        Ext.get('centerFrame').dom.src = 'page/dataView.jsp';
+		        document.title = "共享数据查看";
+		        SetCookie("pagePath", 'page/dataView.jsp');
+	   }
+	}]
+})
+var metaDataManageMenu = new Ext.menu.Menu({
+	items:[{
+		text:'数据库元数据管理',
+		iconCls:'ic_caseLib',
+		menu:new Ext.menu.Menu({
+			items:[{
+				text:'数据库元数据查看',
+				iconCls: 'ic_view',
+				handler : function() {
+//					window.moveTo(-4,-4)
+//                    window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+                    Ext.get("centerFrame").dom.src = 'page/viewDataBaseMetaData.jsp';
+                    document.title = '数据库元数据查看 ';
+                    SetCookie("pagePath",  'page/viewDataBaseMetaData.jsp');
+                    
+                     
+	            }
+			},{
+				text:'数据库元数据增加',
+				iconCls: 'ic_add',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/addDataBaseMetaData.jsp';
+		             document.title = "数据库元数据增加";
+		             SetCookie("pagePath", 'page/addDataBaseMetaData.jsp');
+	            }
+			},{
+				text:'数据库元数据维护',
+				iconCls:'ic_metaCharge',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/updateDataBaseMetaData.jsp';
+		             document.title = "数据库元数据维护";
+		             SetCookie("pagePath", 'page/updateDataBaseMetaData.jsp');
+	            }
+			}]
+		})
+	},{
+		text:'数据表元数据管理',
+		iconCls:'ic_SqlTable',
+		menu:new Ext.menu.Menu({
+			items:[{
+				text:'数据表元数据查看',
+				iconCls: 'ic_view',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/viewDataTable.jsp';
+		             document.title = "数据表元数据查看";
+		             SetCookie("pagePath", 'page/viewDataTable.jsp');
+	            }
+			},{
+				text:'数据表元数据增加',
+				iconCls: 'ic_add',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/addDataTable.jsp';
+		             document.title = "数据表元数据增加";
+		             SetCookie("pagePath", 'page/addDataTable.jsp');
+	            }
+			},{
+				text:'数据表元数据维护',
+				iconCls:'ic_metaCharge',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/updateDataTable.jsp';
+		             document.title = "数据表元数据维护";
+		             SetCookie("pagePath", 'page/updateDataTable.jsp');
+	            }
+			}]
+		})
+	},{
+		text:'数据项元数据管理',
+		iconCls: 'ic_caseDetailCount',
+		menu:new Ext.menu.Menu({
+			items:[{
+				text:'数据项元数据查看',
+				iconCls: 'ic_view',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/showDataItem.jsp';
+		             document.title = "数据项元数据查看";
+		             SetCookie("pagePath", 'page/showDataItem.jsp');
+	            }
+			},{
+				text:'数据项元数据增加',
+				iconCls: 'ic_add',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/addDataItem.jsp';
+		             document.title = "数据项元数据增加";
+		             SetCookie("pagePath", 'page/addDataItem.jsp');
+	            }
+			},{
+				text:'数据项元数据维护',
+				iconCls:'ic_metaCharge',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/updateDataItem.jsp';
+		             document.title = "数据项元数据维护";
+		             SetCookie("pagePath", 'page/updateDataItem.jsp');
+	            }
+			}]
+		})
+	}]
+})
+var departmentOperation=new Ext.Action({
+		text:'科室管理',
+        iconCls:'ic_DepManage',
+        handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'sm/page/Depart_Management.html';
+            document.title = '科室管理 ';
+            SetCookie("pagePath", 'sm/page/Depart_Management.html');
+            
+                    			     	  
+            
+        }
+});
+var dangerSourceOperation=new Ext.Action({
+		text:'危险源数据管理',
+        iconCls:'ic_dangerData',
+        handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'sm/page/danger_Management.jsp';
+            document.title = '危险源管理 ';
+            SetCookie("pagePath", 'sm/page/danger_Management.jsp');
+            
+                    			     	  
+            
+        }
+})
+var menuPaltformConfiguration = new Ext.menu.Menu({
+	id:'menuPaltformConfiguration'	
+//	,iconCls:'ic_systemManage'
+	,items:[{
+		text:'科室管理',
+        iconCls:'ic_DepManage',
+        handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'sm/page/Depart_Management.html';
+            document.title = '科室管理 ';
+            SetCookie("pagePath", 'sm/page/Depart_Management.html');
+            
+                    			     	  
+            
+        }
+     } ,{
+     	text:'危险源管理',
+        iconCls:'ic_DSManage',
+        menu:[{
+     	text:'危险源数据管理',
+        iconCls:'ic_dangerData'
+        ,handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'sm/page/danger_Management.jsp';
+            document.title = '危险源管理 ';
+            SetCookie("pagePath", 'sm/page/danger_Management.jsp');
+            
+                    			     	  
+            
+        }
+     },{
+		text:'危险源元数据',
+        iconCls:'ic_metamanage'
+        ,handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'MetaData/page/dsmetadata.jsp';
+            document.title = '危险源元数据 ';
+            SetCookie("pagePath",  'MetaData/page/dsmetadata.jsp');
+            
+                    			     	  
+            
+        }
+	}]
+     },{	
+     	text:'元数据配置',
+     	iconCls:'ic_metamanage',
+//     	menu:[{
+//     		text:'元数据共享',
+//     		iconCls:'ic_dutyperinfo',
+//     		menu:metaDataManageMenu1
+//     	},{
+//     		text:'元数据管理',
+//     		iconCls:'ic_metaCharge',
+//     		menu:metaDataManageMenu
+//     	}]
+     	handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'page/databaseDispose.jsp';
+            document.title = '元数据配置 ';
+            SetCookie("pagePath", 'page/databaseDispose.jsp');
+            
+                    			     	  
+        }
+     },{
+     	text:'井下GIS管理'
+        ,iconCls: 'ic_Gis'  
+        ,handler: function(){  
+            window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'gis/jsp/CoalInfoManage.jsp';
+            document.title = '井下GIS管理 ';
+            SetCookie("pagePath", 'gis/jsp/CoalInfoManage.jsp');
+            
+                    			     	  
+	    }
+     },{  
+        text: '用户权限管理'
+        ,iconCls: 'ic_usersManage'  
+        ,handler: function(){  
+            window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'sm/page/user_Management.html';
+            document.title = '用户权限管理 ';
+            SetCookie("pagePath", 'sm/page/user_Management.html');
+            
+                    			     	  
+	    }
+	}]
+});
+var adminOperation=new Ext.Action({
+	text: '用户权限管理'
+        ,iconCls: 'ic_usersManage'  
+        ,handler: function(){  
+            window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'sm/page/user_Management.html';
+            document.title = '用户权限管理 ';
+            SetCookie("pagePath", 'sm/page/user_Management.html');
+            
+                    			     	  
+	    }
+})
+var systemManageForEmergeCenter=new Ext.Action({
+	text:'系统管理',
+	icons:'ic_systemManage',
+	menu:[{
+		text:'科室管理',
+        iconCls:'ic_DepManage',
+        handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'sm/page/Depart_Management.html';
+            document.title = '科室管理 ';
+            SetCookie("pagePath", 'sm/page/Depart_Management.html');
+            
+                    			     	  
+            
+        }
+     } ,{
+     	text:'危险源管理',
+        iconCls:'ic_DSManage',
+        menu:[{
+     	text:'危险源数据管理',
+        iconCls:'ic_dangerData'
+        ,handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'sm/page/danger_Management.jsp';
+            document.title = '危险源管理 ';
+            SetCookie("pagePath", 'sm/page/danger_Management.jsp');
+            
+                    			     	  
+            
+        }
+     },{
+		text:'危险源元数据',
+        iconCls:'ic_metamanage'
+        ,handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'MetaData/page/dsmetadata.jsp';
+            document.title = '危险源元数据 ';
+            SetCookie("pagePath", 'MetaData/page/dsmetadata.jsp');
+            
+                    			     	  
+            
+        }
+	}]
+     },{
+     	text:'井下GIS管理'
+        ,iconCls: 'ic_Gis'  
+        ,handler: function(){  
+            window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'gis/jsp/CoalInfoManage.jsp';
+            document.title = '井下GIS管理 ';
+            SetCookie("pagePath", 'gis/jsp/CoalInfoManage.jsp');
+            
+                    			     	  
+	    }
+     }]
+	
+})
+var metaDataManage = new Ext.menu.Menu({
+	id:'metaDataManage'	
+	,iconCls:'ic_metaManage'
+	,items:[{
+     	text:'危险源元数据',
+        iconCls:'ic_DSManage'
+        ,handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'MetaData/page/dsmetadata.jsp';
+            document.title = '危险源元数据 ';
+            SetCookie("pagePath", 'MetaData/page/dsmetadata.jsp');
+            
+                    			     	  
+            
+        }
+     }]
+});
+var actPaltformConfiguration  = new Ext.Action({  
+        text: '系统管理'  
+        ,iconCls: 'ic_systemManage'  
+        ,menu:menuPaltformConfiguration
+}); 
+var metaDataConfiguration  = new Ext.Action({  
+        text: '元数据管理'  
+        ,iconCls: 'ic_metaManage'  
+        ,menu:metaDataManage
+}); 
+
+var coalmineinfomanage1 = new Ext.menu.Menu({
+	id:'donwwellperinfomanage'	
+	,iconCls:'ic_coalmineperinfoManage1'
+	,items:[{  
+        text: '下井人员信息管理'
+        ,iconCls: 'ic_donwwellinfomanage'  
+        ,handler: function(){  
+            window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'perinfo/page/downwell.jsp';
+            document.title = '下井人员信息管理';
+            SetCookie("pagePath", 'perinfo/page/downwell.jsp');
+            
+                    			     	  
+        
+	    }
+	},{
+		text:'值班人员信息管理',
+        iconCls:'ic_dutyperinfo',
+        handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'perinfo/page/dutyper.jsp';
+            document.title = '值班人员信息管理';
+            SetCookie("pagePath", 'perinfo/page/dutyper.jsp');
+            
+                    			     	  
+            
+        }
+     } ,{
+     	text:'人员基本信息管理',
+        iconCls:'ic_basicinfo'
+        ,handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'perinfo/page/basic-info.jsp';
+            document.title = '人员基本信息管理 ';
+            SetCookie("pagePath",  'perinfo/page/basic-info.jsp');
+            
+                    			     	  
+            
+        }
+     }]
+});
+var coalmineinfomanage  = new Ext.Action({  
+        text: '煤矿人员信息管理'  
+        ,iconCls: 'ic_coalmineperinfomanage'  
+        ,menu:coalmineinfomanage1
+}); 
+var personBasicInfoManage  = new Ext.Action({  
+        text:'人员基本信息管理',
+        iconCls:'ic_basicinfo'
+        ,handler: function(){  
+    	    window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+            Ext.get("centerFrame").dom.src = 'perinfo/page/basic-info.jsp';
+            document.title = '人员基本信息管理 ';
+            SetCookie("pagePath", 'perinfo/page/basic-info.jsp' );
+                    			     	  
+            
+        }
+}); 
+var EmergMat=new Ext.Action({
+	text:'应急物资管理',
+	iconCls:'ic_EmergMatManage',
+	 handler: function(){
+    	window.moveTo(-4,-4)
+        window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'EmergMat/page/EmergMatManage.jsp';
+        document.title = '应急物资管理 ';
+        SetCookie("pagePath",'EmergMat/page/EmergMatManage.jsp' );
+    }
+})
+
+//应急信息GIS资源呈现
+var actEmergencyGIS = new Ext.Action({
+    text: '应急GIS',
+    iconCls: 'ic_Gis',
+    handler: function(){
+    	window.moveTo(-4,-4)
+            window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'gis/jsp/CoalGISInfo.jsp';
+        document.title = '应急GIS ';
+        SetCookie("pagePath", 'gis/jsp/CoalGISInfo.jsp' );
+        
+                			     	  
+    }
+});
+//专家库
+var expertLibrary=new Ext.Action({
+	text:'专家库',
+	iconCls:'ic_expertLib',
+	handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='emergInfoLib/page/expertLibrary.jsp';
+		document.title="专家库";
+		SetCookie("pagePath", 'emergInfoLib/page/expertLibrary.jsp');
+
+	}
+})
+//知识库
+var knowledgeLibrary=new Ext.Action({
+	text:'知识库',
+	iconCls:'ic_knowledgeLib',
+	handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='emergInfoLib/page/knowledgeLibrary.jsp';
+		document.title="知识库";
+		SetCookie("pagePath", 'emergInfoLib/page/knowledgeLibrary.jsp');
+
+	}
+})
+var planLibrary=new Ext.Action({
+	text:'预案库',
+	iconCls:'ic_planLib',
+	handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='emergInfoLib/page/planLibrary.jsp';
+		document.title="预案库";
+		SetCookie("pagePath",'emergInfoLib/page/planLibrary.jsp' );
+
+	}
+})
+var disposalSchemeLibrary=new Ext.Action({
+	text:'处置方案库',
+	iconCls:'ic_disposalSchemeLib',
+	handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='emergInfoLib/page/disposalSchemeLibrary.jsp';
+		document.title="处置方案库";
+		SetCookie("pagePath", 'emergInfoLib/page/disposalSchemeLibrary.jsp');
+
+	}
+})
+var componentTest=new Ext.Action({
+	text:'组件测试',
+	iconCls:'ic_planLib',
+	handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='PlanManage/page/test.jsp';
+		document.title="组件测试";
+		SetCookie("pagePath", 'PlanManage/page/test.jsp');
+
+	}
+})
+var menuResourceSupport = new Ext.menu.Menu({
+	id:'menuResourceSupport',
+	items:[{
+		text:'事故案例库',
+		iconCls:'ic_caseLib',
+		handler:function(){
+	    	if (document.body.offsetWidth != screen.availWidth) {
+	        	window.moveTo(0,0)
+	            window.resizeTo(screen.availWidth,screen.availHeight);
+			}
+	    	Ext.get('centerFrame').dom.src='casepages/caseindex.jsp';
+	    	document.title = "案例库";  
+	    	SetCookie("pagePath", 'casepages/caseindex.jsp');
+	    	
+       		        			     	  
+//        	
+	    }
+	},{
+		text:'知识库',
+		iconCls:'ic_knowledgeLib',
+		handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='emergInfoLib/page/knowledgeLibrary.jsp';
+		document.title="知识库";
+		SetCookie("pagePath", 'emergInfoLib/page/knowledgeLibrary.jsp');
+
+		}
+	},{
+		text:'专家库',
+		iconCls:'ic_expertLib',
+		handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='emergInfoLib/page/expertLibrary.jsp';
+		document.title="专家库";
+		SetCookie("pagePath", 'emergInfoLib/page/expertLibrary.jsp');
+
+		}
+	},{
+		text:'预案库',
+		iconCls:'ic_planLib',
+		handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='emergInfoLib/page/planLibrary.jsp';
+		document.title="预案库";
+		SetCookie("pagePath",'emergInfoLib/page/planLibrary.jsp' );
+
+		}
+	},{
+		text:'处置方案库',
+		iconCls:'ic_disposalSchemeLib',
+		handler:function(){
+		window.moveTo(-4,-4)
+		window.resizeTo(screen.availWidth+9,screen.availWidth+9);
+		Ext.get('centerFrame').dom.src ='emergInfoLib/page/disposalSchemeLibrary.jsp';
+		document.title="处置方案库";
+		SetCookie("pagePath", 'emergInfoLib/page/disposalSchemeLibrary.jsp');
+
+		}
+	},{
+		text:'应急物资库',
+		iconCls:'ic_EmergMatManage',
+	 	handler: function(){
+    	window.moveTo(-4,-4)
+        window.resizeTo(screen.availWidth+9,screen.availHeight+9);
+        Ext.get("centerFrame").dom.src = 'EmergMat/page/EmergMatManage.jsp';
+        document.title = '应急物资管理 ';  
+        SetCookie("pagePath",'EmergMat/page/EmergMatManage.jsp' );
+    	}
+	}]
+})
+
+//应急资源保障
+var emergResourceSupport = new Ext.Action({
+	text:'应急资源保障',
+	iconCls: 'ic_EmergMatManage',
+	menu:menuResourceSupport
+});
+
+//应急评估	
+var menuEvaluation = new Ext.menu.Menu({
+	id:'menuEvaluation',	
+	items:[{
+		text:'评估配置',
+	    iconCls:'ic_plugin',
+	    handler:function(){
+	    	if (document.body.offsetWidth != screen.availWidth) {
+	        	window.moveTo(0,0)
+	            window.resizeTo(screen.availWidth,screen.availHeight);
+			}
+	    	Ext.get('centerFrame').dom.src='emergEvaluate/page/evaluateConfiguration.jsp';
+	    	document.title = "评估配置";  
+	    	SetCookie("pagePath",'emergEvaluate/page/evaluateConfiguration.jsp' );
+	    	
+       		   
+	   }
+	},{
+		text:'评估查看',
+	    iconCls:'ic_evaluateView',
+	    handler:function(){
+	    	if (document.body.offsetWidth != screen.availWidth) {
+	        	window.moveTo(0,0)
+	            window.resizeTo(screen.availWidth,screen.availHeight);
+			}
+	    	Ext.get('centerFrame').dom.src='emergEvaluate/page/viewEvaluation.jsp';
+	    	document.title = "评估查看";  	    	
+	    	SetCookie("pagePath", 'emergEvaluate/page/viewEvaluation.jsp');
+       		        			     	  
+//        	
+	    }
+	}]
+});
+//应急评估	
+var emergEvaluation = new Ext.Action({
+	text:'应急评估',
+	iconCls: 'ic_evaluate',
+	menu:menuEvaluation
+});
+//专家评估
+var emergEvaluationLimit = new Ext.Action({
+		text:'专家评估',
+	    iconCls:'ic_expertLib',
+	    handler:function(){
+	    	if (document.body.offsetWidth != screen.availWidth) {
+	        	window.moveTo(0,0)
+	            window.resizeTo(screen.availWidth,screen.availHeight);
+			}
+	    	Ext.get('centerFrame').dom.src='emergEvaluate/page/expertEvaluateEvent.jsp';
+	    	document.title = "专家评估";  
+	    	SetCookie("pagePath", 'emergEvaluate/page/expertEvaluateEvent.jsp');
+	    	
+       		        			     	  
+	    }
+});
+
+
+var metaDataManage = new Ext.Action({
+	text:'元数据管理',
+	iconCls: 'ic_metaManage' ,
+	menu:metaDataManageMenu
+})
+
+var metaDataShare = new Ext.Action({
+	text:'元数据共享',
+	iconCls:'ic_dutyperinfo',
+	menu:metaDataManageMenu1
+});
+
+var caseLib= new Ext.Action({
+	text:'案例库',
+	handler:function(){
+	    	if (document.body.offsetWidth != screen.availWidth) {
+	        	window.moveTo(0,0)
+	            window.resizeTo(screen.availWidth,screen.availHeight);
+			}
+	    	Ext.get('centerFrame').dom.src='casepages/caseindex.jsp';
+	    	document.title = "案例库";
+	    	SetCookie("pagePath", 'casepages/caseindex.jsp');
+	    	
+       		        			     	        	
+	    }
+})

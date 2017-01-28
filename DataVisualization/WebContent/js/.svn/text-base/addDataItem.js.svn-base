@@ -1,0 +1,372 @@
+﻿function addDataItem(){
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+		id:'-1',
+		text:'数据项',
+		expanded:true,
+		leaf:false
+	})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+		dataUrl:'/CoalMine/servlet/DataItemServlet',
+		baseParams:{
+			action:'getDataItemLeftTree'
+		}
+	})
+	var leftTreePanel = new Ext.tree.TreePanel({
+		root:leftTreeRoot,
+		loader:leftTreeLoad,
+		region:'west',
+		layout:'fit',
+		autoScroll:true,
+		title:'数据项元数据增加',
+		id:'TreePanel_id',
+	    split : true,
+		width : 240,
+		minSize : 175,
+		maxSize : 400,
+		collapsible : true
+	})
+	
+	function firefunction(node){
+		var nodeId = node.id;
+		var text = node.text;
+		if(node.id.split('_')[1]=="table"){
+			node.leaf=false;
+			Ext.Ajax.request({
+				url:'/CoalMine/servlet/DataItemServlet',
+				method:'POST',
+				params:{
+				     action:'getDataItemInfo',
+				     dbId:node.parentNode.id.substring(9,node.parentNode.id.length),
+				     tableName:text,
+				     tableId:node.id.split('_')[2]
+				},
+			    success:function(response,request){
+				      var res = Ext.util.JSON.decode(response.responseText);
+				      if(!node.hasChildNodes())
+				          node.appendChild(res);
+			    }
+			})
+		}
+	}
+	leftTreePanel.on('click',function(node){
+		firefunction(node);
+	})
+	leftTreePanel.on('expandnode',function(node){
+		firefunction(node);
+	})
+	var txt_ItemName = new Ext.form.TextField({
+		fieldLabel:'数据库字段名',
+		allowBlank : false
+	});
+	var txt_ItemChinaName = new Ext.form.TextField({
+		fieldLabel:'字段标识名',
+		allowBlank : false
+	});
+	var txt_ItemNameForOther = new Ext.form.TextField({
+		fieldLabel:'对外显示名',
+		allowBlank : false
+	});
+	var store_itemType = new Ext.data.SimpleStore({
+		fields:['id','text'],
+		data:[[1,'char'],[2,'int'],[3,'text'],[4,'varchar'],[5,'datetime'],[6,'bit'],[7,'float']
+		      ,[8,'bigint'],[9,'binary'],[10,'decimal'],[11,'image'],[12,'money'],[13,'nchar']
+		      ,[14,'ntext'],[15,'numeric'],[16,'nvarchar'],[17,'real'],[18,'smalldatetime']
+		      ,[19,'smallint'],[20,'smallmoney'],[21,'sql_variant'],[22,'text'],[23,'timestamp']
+		      ,[24,'tinyint'],[25,'uniqueidentifier'],[26,'varbinary'],[27,'varchar']]
+	})
+	var comb_itemType = new Ext.form.ComboBox({
+		fieldLabel:'字段类型',
+		store:store_itemType,
+		valueField:'id',
+		displayField:'text',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	var txt_ItemLength = new Ext.form.TextField({
+		fieldLabel:'字段长度',
+		allowBlank : false
+	});
+	var store_auto = new Ext.data.SimpleStore({
+		fields:['id','text'],
+		data:[[0,'是'],[1,'否']]
+	})
+	var comb_ItemAuto = new Ext.form.ComboBox({
+		fieldLabel:'是否自动生成',
+		store:store_auto,
+		valueField:'id',
+		displayField:'text',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+    var store_ItemNull = new Ext.data.SimpleStore({
+		fields:['id','text'],
+		data:[[0,'是'],[1,'否']]
+	})
+	var comb_ItemNull = new Ext.form.ComboBox({
+		fieldLabel:'是否可空',
+		store:store_ItemNull,
+		valueField:'id',
+		displayField:'text',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+
+	var ds_dataBaseList = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root : 'rows'}, [{name : "id"}, {name : "text"}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataBaseServlet'
+		}),
+		baseParams : {
+			action : 'getDataBaseList'
+		}
+	})
+	ds_dataBaseList.load();
+	var comb_dataBase = new Ext.form.ComboBox({
+		fieldLabel:'所在数据库名称',
+		store:ds_dataBaseList,
+		valueField:'id',
+		displayField:'text',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	var ds_tableList = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root : 'rows'}, [{name : "id"}, {name : "tableName"},{name:"ChinaName"}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataTableServlet'
+		}),
+		baseParams : {
+			action : 'getDataTableList',
+            dbId:-1
+		}
+	})
+	var comb_dataTable = new Ext.form.ComboBox({
+		fieldLabel:'所在数据表名称',
+		store:ds_tableList,
+		valueField:'id',
+		displayField:'ChinaName',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	comb_dataBase.on('select',function(comb,record,index){
+		var dbId = record.data.id;
+		ds_tableList.baseParams.dbId = dbId;
+		ds_tableList.load();
+	})
+	var store_ItemShowType = new Ext.data.SimpleStore({
+		fields:['id','text'],
+		data:[[1,'文本框'],[2,'下拉框'],[3,'文本域']]
+	})
+	var comb_ItemShowType = new Ext.form.ComboBox({
+		fieldLabel:'显示方式',
+		store:store_ItemShowType,
+		valueField:'id',
+		displayField:'text',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	var txt_ItemShowLength = new Ext.form.TextField({
+		fieldLabel:'显示宽度',
+		allowBlank : false
+	});
+	 var store_readOnly = new Ext.data.SimpleStore({
+		fields:['id','text'],
+		data:[[0,'否'],[1,'是']]
+	})
+	var comb_readOnly = new Ext.form.ComboBox({
+		fieldLabel:'是否只读',
+		store:store_readOnly,
+		valueField:'id',
+		displayField:'text',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	var txt_ItemDescription = new Ext.form.TextArea({
+		fieldLabel:'字段描述',
+		anchor:'80%'
+	});
+	var fs_basicInfo = new Ext.form.FieldSet({
+		autoHeight : true,
+	    autoWidth : true,//[10.14]不会出现宽度太小，控件消失的问题
+	    frame:false,
+	    fitToFrame:true,
+	    split:true,
+	    bodyStyle: 'position:relative',
+	    style:'padding:10px 10px 10px 10px',
+	    width:'95%',
+	    layout : 'column',
+	    border:false,
+		title:'数据项基本信息',
+		items:[{
+			xtype : 'container',
+		 	autoEl : {},
+			columnWidth : 0.45,
+		 	layout : 'form',
+		 	items:[txt_ItemName,txt_ItemNameForOther,
+		 	txt_ItemLength,comb_ItemNull,comb_dataTable,txt_ItemShowLength]
+		},{
+			xtype : 'container',
+		 	autoEl : {},
+			columnWidth : 0.45,
+		 	layout : 'form',
+		 	items:[txt_ItemChinaName,comb_itemType,
+		 	comb_ItemAuto,comb_dataBase,comb_ItemShowType,comb_readOnly]
+		}]
+	})
+	
+	var store_words = new Ext.data.SimpleStore({
+		fields:['id','txt'],
+		data:[]
+	})
+	var wordTableGridPanel = new Ext.grid.EditorGridPanel({
+		title:'字典值管理',
+		height:200,
+		autoWidth:true,
+		store:store_words,
+		columns:[
+			{header: '选择 ',dataIndex:'id'},
+			{header: '字段名',dataIndex:'txt'}
+		]
+	})
+	var fs_description = new Ext.form.FieldSet({
+		layout:'form',
+		border:false,
+		frame:false,
+	    fitToFrame:true,
+		items:[{ 
+            xtype:'panel', 
+            layout:'column', 
+            border:false, 
+            frame:false,
+	        fitToFrame:true,
+            fieldLabel:'构成查询条件', 
+            defaults:{ 
+                layout:'form', 
+                border:false, 
+                frame:false,
+	            fitToFrame:true,
+                columnWidth:.2 
+            }, 
+            items:[{ 
+                labelSeparator:'：', 
+                items:{ 
+                   xtype:'radio', 
+                   checked:true,
+                   id:'id_query',
+                   name:'isquery', 
+                   boxLabel:'是' 
+                } 
+            },{ 
+               items:{ 
+               xtype:'radio', 
+               name:'isquery', 
+               id:'id_noquery',
+               hideLabel:true, 
+               boxLabel:'否' 
+               } 
+            }] 
+      },{ 
+            xtype:'panel', 
+            layout:'column', 
+            border:false, 
+            frame:false,
+	        fitToFrame:true,
+            fieldLabel:'是否开放', 
+            defaults:{ 
+                layout:'form', 
+                border:false, 
+                frame:false,
+	            fitToFrame:true,
+                columnWidth:.2 
+            }, 
+            items:[{ 
+                labelSeparator:'：', 
+                items:{ 
+                   xtype:'radio', 
+                   id:'id_open',
+                   checked:true,
+                   name:'isopen', 
+                   boxLabel:'是' 
+                } 
+            },{ 
+               items:{ 
+               xtype:'radio', 
+               name:'isopen', 
+               id:'id_noopen',
+               hideLabel:true, 
+               boxLabel:'否' 
+               } 
+            }] 
+      }] 
+	})
+	
+	var rightPanel = new Ext.form.FormPanel({
+		region:'center',
+		layout:'form',
+		buttonAlign:'center',
+		items:[fs_basicInfo,txt_ItemDescription,fs_description],
+		buttons:[{text:'增加',handler:function(){
+			if(txt_ItemName.isValid()&&txt_ItemNameForOther.isValid()&&txt_ItemLength.isValid()
+			   &&comb_ItemNull.isValid()&&comb_dataTable.isValid()&&txt_ItemShowLength.isValid()
+			   &&txt_ItemChinaName.isValid()&&comb_itemType.isValid()&&comb_ItemAuto.isValid()
+			   &&comb_dataBase.isValid()&&comb_ItemShowType.isValid()&&comb_readOnly.isValid()){
+			   	var isquery = 0;
+			if(Ext.getCmp("id_query").checked==true)
+			    isquery = 1;
+			var isopen = 0;
+			if(Ext.getCmp("id_open").checked == true)
+			    isopen = 1;
+			Ext.Ajax.request({
+				url:'/CoalMine/servlet/DataItemServlet',
+				method:'POST',
+				params:{
+				     action:'addDataItem',
+				     dbId:comb_dataBase.getValue(),
+				     tableName:comb_dataTable.getStore().getById(comb_dataTable.getValue()).data.tableName,
+				     itemName:txt_ItemName.getValue(),
+				     ChinaName:txt_ItemChinaName.getValue(),
+				     itemNameForOther:txt_ItemNameForOther.getValue(),
+				     itemType:comb_itemType.getRawValue(),
+				     itemLength:txt_ItemLength.getValue(),
+				     itemAuto:comb_ItemAuto.getValue(),
+				     itemNull:comb_ItemNull.getValue(),
+				     itemShowType:comb_ItemShowType.getRawValue(),
+				     itemShowLength:txt_ItemShowLength.getValue(),
+				     itemReadOnly:comb_readOnly.getValue(),
+				     description:txt_ItemDescription.getValue(),
+				     isquery:isquery,
+				     isopen:isopen
+				},
+			    success:function(response,request){
+				      var res = Ext.util.JSON.decode(response.responseText);
+				      if (res.success == true) {
+							Ext.Msg.show({
+								title : '提示',
+								msg : '添加成功!',
+								buttons : Ext.Msg.OK
+							});
+							leftTreeRoot.reload();
+						} else
+							Ext.Msg.show({
+								title : '提示',
+								msg : '添加失败!',
+								buttons : Ext.Msg.OK
+							})
+				}
+			})
+			   }
+		}},{text:'重置'}]
+	})
+	var vp = new Ext.Viewport({
+		id:'ViewPort_Id',
+		layout:'border',
+		items:[leftTreePanel,rightPanel]
+	})
+}
+Ext.onReady(addDataItem);

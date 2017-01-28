@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>湿度实时监测</title>
+<link rel="stylesheet" href="../css/jquery-ui.css">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/jquery-3.1.1.js"></script>
+<script src="../js/jquery-ui.js"></script>
+<script src="../js/spin.js"></script>
+<script src="../js/SuperMap.Include.js"></script>
+<script type="text/javascript">
+	//声明变量map、layer、url
+	var map, layer, heatMapLayer, url = "http://192.168.109.207:8090/iserver/services/map-Mining2/rest/maps/road@某矿";
+	var url_localhost="http://localhost:8090/iserver/services/map-Mining/rest/maps/road@某矿";
+	//声明marker变量
+	var  markers,size,offset,icon;
+	//Data_Array
+	var id_Array = [], x_Array = [], y_Array = [], value_Array = [];
+	//Timer
+	var interval;
+	//创建地图控件
+	function init() {
+		map = new SuperMap.Map("map");
+		//创建分块动态REST图层，该图层显示iserver 8C 服务发布的地图,
+		//其中"world"为图层名称，url图层的服务地址，{transparent: true}设置到url的可选参数
+		layer = new SuperMap.Layer.TiledDynamicRESTLayer("road@某矿", url, null,
+				{
+					maxResolution : "auto"
+				});
+		heatMapLayer = new SuperMap.Layer.HeatMapLayer("heatMap", {
+			"featureWeight" : "value",
+			"featureRadius" : "geoRadius",
+			"maxWeight" : 65,
+			"minWeight" : 40,
+		});
+		var colors = [
+		              new  SuperMap.REST.ServerColor(0,0,255),
+		              new  SuperMap.REST.ServerColor(0,255,255),
+		              new  SuperMap.REST.ServerColor(0,255,0),
+		              new  SuperMap.REST.ServerColor(255,255,0),
+		              new  SuperMap.REST.ServerColor(255,0,0)
+		         ];
+		//heatMapLayer.colors = colors;
+		layer.events.on({
+			"layerInitialized" : addLayer
+		});
+		//初始化标记图层类
+		markers = new SuperMap.Layer.Markers("Markers");
+		size = new SuperMap.Size(15, 20);
+		offset = new SuperMap.Pixel(-(size.w / 2), -size.h);
+		icon = new SuperMap.Icon('../image/marker.png', size, offset);
+	}
+	function addLayer() {
+		//将Layer图层加载到Map对象上
+		map.addLayers([ layer, heatMapLayer, markers]);
+		//出图，map.setCenter函数显示地图
+		map.setCenter(new SuperMap.LonLat(450, 150), 0);
+	}
+	function getData() {
+		$.ajax({
+			type : 'post',
+			url : 'GetHumidityRealtimeData.jsp',
+			dataType : 'json',
+			success : function(data) {
+				for (var i = 0; i < data.length; i++) {
+					id_Array[i] = data[i].id;
+					x_Array[i] = data[i].x_point;
+					y_Array[i] = data[i].y_point;
+					value_Array[i] = data[i].value;
+				}
+			}
+		});
+		createHeatPoints();
+		//console.log("create");
+	}
+	function createHeatPoints(){
+    	clearHeatPoints();
+    	var heatPoints = [];
+        for(var i=0;i<id_Array.length;i++){
+        	heatPoints[i] = new SuperMap.Feature.Vector(
+        			new SuperMap.Geometry.Point(
+        			    x_Array[i],
+        				y_Array[i]
+        			),
+        			{
+        				"value":value_Array[i], 
+        				"geoRadius":100
+        			}
+        	);
+        }
+        heatMapLayer.addFeatures(heatPoints);
+    }
+    function clearHeatPoints(){
+    	heatMapLayer.removeAllFeatures();
+    }
+    function show(){
+    	interval=window.setInterval("getData()", 1000);
+    	//console.log("show");	
+    }
+    function shutdown(){
+    	clearInterval(interval);
+    	clearHeatPoints();
+    	//console.log("close");
+    }
+  //声明标记类数组
+    var marker_Array = [];
+    var infowin = null;
+    function addMarkers(){
+    	closeInfoWin();
+		//初始化标记覆盖物类
+		for(var i=0;i<id_Array.length;i++){
+			marker_Array[i] = new SuperMap.Marker(new SuperMap.LonLat(x_Array[i],y_Array[i]), icon);
+			//添加覆盖物到标记图层
+			markers.addMarker(marker_Array[i]);
+			//注册 click 事件,触发 mouseClickHandler()方法
+			marker_Array[i].events.on({
+				"click" : mouseClickHandler
+			});
+		}
+    }
+    function clearMarkers(){
+    	closeInfoWin();
+    	markers.clearMarkers();
+    }
+    function mouseClickHandler(event) {
+		closeInfoWin();
+	    console.log("s:"+event.object.lonlat.lon+","+event.object.lonlat.lat);
+		var x=event.object.lonlat.lon;
+		var y=event.object.lonlat.lat;
+		var index=findId(x,y);
+		if(index!=null){
+			var value=value_Array[index];
+			var contentHTML = "<div style='width:100px; font-size:12px;font-weight:bold ; opacity: 0.8'>";
+			contentHTML += "<p>坐标："+x+","+y+"</p>";
+			contentHTML += "<p>当前湿度："+value+"%</p>";
+			contentHTML += "</div>";
+			//初始化FramedCloud类
+			var framedCloud = new SuperMap.Popup.FramedCloud(index+"", new SuperMap.LonLat(x,y), null, contentHTML, icon, true, null, true);
+			infowin = framedCloud;
+			map.addPopup(framedCloud);
+		}else{
+			console.log(event.object.lonlat.lon+","+event.object.lonlat.lat);
+		}
+		
+	}
+	function closeInfoWin() {
+		if (infowin) {
+			try {
+				infowin.hide();
+				infowin.destroy();
+			} catch (e) {
+			}
+		}
+	}
+	function findId(x,y){
+		var index=null;
+		for(var i=0;i<id_Array.length;i++){
+			var x_point=x_Array[i];
+			var y_point=y_Array[i];
+			if(Math.abs(x_point)>=0&&Math.abs(x_point)<10){
+				x_point=x_point.toFixed(13);
+			}else if(Math.abs(x_point)>=10&&Math.abs(x_point)<100){
+				x_point=x_point.toFixed(12);
+			}else if(Math.abs(x_point)>=100&&Math.abs(x_point)<1000){
+				x_point=x_point.toFixed(11);
+			}else if(Math.abs(x_point)>=1000){
+				x_point=x_point.toFixed(10);
+			}
+			
+			if(Math.abs(y_point)>=0&&Math.abs(y_point)<10){
+				y_point=y_point.toFixed(13);
+			}else if(Math.abs(y_point)>=10&&Math.abs(y_point)<100){
+				y_point=y_point.toFixed(12);
+			}else if(Math.abs(y_point)>=100&&Math.abs(y_point)<1000){
+				y_point=y_point.toFixed(11);
+			}else if(Math.abs(y_point)>=1000){
+				y_point=y_point.toFixed(10);
+			}
+			
+			if(x_point==x&&y_point==y){
+				index=i;
+				return index;
+			}
+		}
+		return index;
+	}
+</script>
+</head>
+<body onload="init()">
+<div id="container" style="width:100%;height:400px">
+<div id="utils" style="float:left;width:25%;height:100%;border-style:ridge;border-color:#3893d3;border-width:5px;">
+<input type="button" class="btn" value="开始监测" style="margin-bottom: 10px" onclick="show()" />
+<input type="button" class="btn" value="停止监测" style="margin-bottom: 10px" onclick="shutdown()" />
+<input type="button" class="btn" value="添加标记" onclick="addMarkers()" />
+<input type="button" class="btn" value="清除标记" onclick="clearMarkers()" />
+</div>
+<div id="content" style="width:73%;height:400px;float:right;border-style:ridge;border-color:#3893d3;border-width:2px;">
+<div id="map" style="width:100%;height:350px;">
+</div>
+<div id="header" style="float:right;bottom:0;">
+舒适湿度：<button style="background-color: #99F77F">50%</button>
+湿度过高预警：<button style="background-color: #F04A06">60%</button>
+</div>
+</div>
+</div>
+</body>
+</html>

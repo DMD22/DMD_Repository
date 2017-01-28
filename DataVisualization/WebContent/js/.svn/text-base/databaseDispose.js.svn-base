@@ -1,0 +1,97 @@
+﻿function databaseDispose(){
+	var databaseName = new Ext.form.TextField({
+		width:180,
+		fieldLabel:'数据库名',
+		allowBlank : false
+	})
+	var userName = new Ext.form.TextField({
+		width:180,
+		fieldLabel:'用户名',
+		allowBlank : false
+	})
+	var psw = new Ext.form.TextField({
+		width:180,
+		fieldLabel:'密码',
+		inputType:'password',
+		allowBlank : false
+	})
+	var store_drive = new Ext.data.SimpleStore({
+		fields:['id','text'],
+		data:[[1,'oracle数据库驱动'],[2,'sql数据库驱动'],
+		[3,'mysql数据库驱动'],[4,'db2数据库驱动']]
+	})
+	var drive = new Ext.form.ComboBox({
+		width:180,
+		fieldLabel:'驱动',
+		store:store_drive,
+		valueField:'id',
+		displayField:'text',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	var ip = new Ext.form.TextField({
+		width:180,
+		fieldLabel:'IP',
+		allowBlank : false
+	})
+	var port = new Ext.form.TextField({
+		width:180,
+		fieldLabel:'端口号',
+		allowBlank : false
+	})
+	////////////////////////////////////
+	var panel = new Ext.form.FormPanel({
+		anchor:'90%',
+		title:'第一步：配置数据库',
+		bodyStyle:'padding:10px 200px',
+		items:[databaseName,userName,psw,drive,ip,port],
+		buttons:[{text:'保存',handler:function(){
+			if(databaseName.isValid()&&userName.isValid()&&psw.isValid()&&drive.isValid()&&ip.isValid()&&port.isValid()){
+				var a = 1;
+			    saveDispose(a);
+			}
+		}},{text:'下一步',
+		handler:function(){
+			if(databaseName.isValid()&&userName.isValid()&&psw.isValid()&&drive.isValid()&&ip.isValid()&&port.isValid()){
+				var a = 2;
+			    saveDispose(a);
+			}
+		}}]
+	})
+	function saveDispose(a){
+	        Ext.Ajax.request({
+				url:'/CoalMine/servlet/DisposeServlet',
+				method:'POST',
+				params:{
+					action:'databaseDispose',
+					databaseName:databaseName.getValue(),
+					userName:userName.getValue(),
+					psw:psw.getValue(),
+					drive:drive.getRawValue(),
+					ip:ip.getValue(),
+					port:port.getValue()
+				},
+				success:function(response, request){
+					res = Ext.util.JSON.decode(response.responseText);
+					if(a==1){
+						if(res.success==true)
+						   Ext.MessageBox.alert("提示","保存成功");
+						else
+						   Ext.MessageBox.alert("提示","请重新输入");
+					}
+					else if(a==2){
+						if(res.success==true){
+				           parent.centerFrame.location = '/CoalMine/page/tableDispose.jsp';
+			            }else
+			               Ext.MessageBox.alert("提示","请重新输入");
+					}
+				}
+			})
+	}
+	var view = new Ext.Viewport({
+		items:[panel]
+	})
+	view.show();
+}
+Ext.onReady(databaseDispose);

@@ -1,0 +1,98 @@
+body{
+	font-size: 13px;
+	/*border: solid 1px red;*/
+	
+}
+#tablediv{
+	padding-left: 350px;
+	text-align: center;
+	/*border: solid 1px blue;*/
+}
+table{
+	text-align: center;
+	border: solid 1px black;
+}
+table th{
+	font-size: 16px;
+	text-align: center;
+}
+table tr td{
+	border: solid 1px #eee;
+	height: 20px;
+	width: 100px;
+}
+span{
+	margin:3px;
+	/*float: left;*/
+}
+img{
+	height: 200px;
+}
+/*******************Ƶ���л�������********************/
+#changediv{
+	padding-left: 400px;
+	margin-bottom: 10px;
+	/*border: solid 1px yellow;*/
+}
+
+/******************����table*******************/
+#healthy_table{
+	text-align: center;
+	border: solid 1px black;
+	display: none;
+	
+}
+
+/******************��Ա������Ϣtable*******************/
+#PersonInfo_table{
+	text-align: center;
+	border: solid 1px black;
+	display: none;
+}
+/******************��������table*******************/
+#WorkExperience_table{
+	text-align: center;
+	border: solid 1px black;
+	margin-top:  10px;
+	display: none;
+}
+
+/******************��������table*******************/
+#PersonalSign_table{
+	text-align: left;
+	/*border: solid 1px black;*/
+	
+}
+#PersonalSign_table tr td{
+	width: 160px;
+	height: 20px;
+}
+/************������div***************/
+.AnimalHeat_pro{
+	margin:3px;
+	text-align: center;
+}
+/**************����������div******************/
+#AnimalHeat_proContent, #Pulse_proContent,#HeartRate_proContent,#RespiratoryRate_proContent,#BloodGlucose_proContent,#BloodOxygen_proContent{
+	margin:2px;
+	width:110px;
+	height:17px;
+	background-color: #eee;
+	float: left;
+}
+
+/*************��ֵѡ�е���ʽ****************/
+#AnimalHeat_value,#Pulse_value,#HeartRate_value,#RespiratoryRate_value,#BloodGlucose_value,#BloodOxygen_value{
+	padding-left: 50px;
+	margin: 0px;
+	
+}
+#AnimalHeat_res,#Pulse_res,#HeartRate_res,#RespiratoryRate_res,#BloodGlucose_res,#BloodOxygen_res{
+	float: right;
+}
+
+/*******ѡ����ʽ********/
+.GetFocus{
+	background-color: #eee;
+}
+

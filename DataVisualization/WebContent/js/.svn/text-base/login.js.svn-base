@@ -1,0 +1,38 @@
+﻿function login(){
+	var userName = new Ext.form.TextField({
+		fieldLabel:'用户名',
+		value:'admin'
+	});
+	var userPsw = new Ext.form.TextField({
+		fieldLabel:'密码',
+		value:'admin'
+	});
+	var loginPanel = new Ext.form.FormPanel({
+		anchor:'90%',
+		items:[userName,userPsw],
+		buttons:[{text:'登录',
+		handler:function(){
+			Ext.Ajax.request({
+				url:'/CoalMine/servlet/LoginServlet',
+				method:'POST',
+				params:{
+					action:'login',
+					userName:userName.getValue(),
+					psw:userPsw.getValue()
+				},
+				success:function(response,request){
+					var res = Ext.util.JSON.decode(response.responseText);
+					if(res.success==true)
+					   parent.location = '/CoalMine/page/deptDefault.jsp';
+				}
+			})
+		}
+		},{text:'取消'
+		}]
+	})
+	var view = new Ext.Viewport({
+		items:[loginPanel]
+	})
+	view.show();
+}
+Ext.onReady(login);

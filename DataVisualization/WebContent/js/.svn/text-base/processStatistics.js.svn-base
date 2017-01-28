@@ -1,0 +1,2195 @@
+﻿function Statistic(){
+	Ext.BLANK_IMAGE_URL = '../img/s.gif';						 
+	Ext.QuickTips.init();
+	Ext.form.Field.prototype.msgTarget = 'side';
+	Ext.override(Ext.layout.FormLayout, {   
+                getAnchorViewSize:function(ct, target) {   
+                    return (ct.body || ct.el).getStyleSize();   
+                }   
+    }); 
+	var cc=Ext.apply({item:[]},{sdf:'sd'});
+	//ie8下extjs2 会变形,新版的extjs3.0修正了这个bug
+	Ext.override(Ext.menu.DateMenu, {
+			 autoWidth: function() {
+				  var el = this.el, ul = this.ul;
+				  if (!el) {
+					  return;
+				  }
+				  var w = this.width;
+				  if (w) {
+					  el.setWidth(w);
+				  } 
+				  else{
+					  if (Ext.isIE && !Ext.isIE6) {
+						  el.setWidth(this.minWidth);
+						  var t = el.dom.offsetWidth;
+						  el.setWidth(ul.getWidth() + el.getFrameWidth("lr"));
+					  }
+				  }
+			 }
+	});
+	Ext.state.Manager.setProvider(new Ext.state.CookieProvider());//用cookie记录这个界面的expand、collapse情况
+	// disable stateful for all base Component
+	Ext.override(Ext.Component, {
+    	stateful: false
+	});
+// enable stateful for Ext.grid.GridPanel
+	Ext.override(Ext.Panel, {
+    	stateful: true
+	});
+	//获得各类形式的id
+	var TAB_PREFIX = 'AWS_CC_CP_TAB_';
+	var getTabId = function(id){
+		return TAB_PREFIX + id;
+	}
+	var TAB_FRM_PREFIX = 'AWS_CC_CP_TAB_FRM_';
+	var  getFrmId = function(id){
+		return TAB_FRM_PREFIX + id;
+	}
+	var getFrmIdByTab = function(tabId){
+		return TAB_FRM_PREFIX + tabId.substring(TAB_PREFIX.length);
+	}
+	
+	 var root = new Ext.tree.TreeNode({
+    	id:'statisticsAndreport',
+    	text:'统计和报表',
+    	leaf:false
+    });
+    
+    var statistic = new Ext.tree.TreeNode({
+    	id:'statistic',
+    	text:'数据统计',
+    	leaf:false
+    });
+    
+    var report = new Ext.tree.TreeNode({
+    	id:'report',
+    	text:'报表生成',
+    	leaf:false
+    });
+//数据统计   树各个节点  
+     var departmentSta = new Ext.tree.TreeNode({
+    	id:'departmentSta',
+    	text:'按照科室名称',
+    	leaf:true	
+    });
+    
+    var dangerSta = new Ext.tree.TreeNode({
+    	id:'dangerSta',
+    	text:'按照危险源',
+    	leaf:true
+    });
+    
+    var caselevelSta = new Ext.tree.TreeNode({
+    	id:'caselevelSta',
+    	text:'按照事件级别',
+    	leaf:true
+    });
+    
+     var casetypeSta = new Ext.tree.TreeNode({
+    	id:'casetypeSta',
+    	text:'按照事件类别',
+    	leaf:false
+    });
+    
+    var deathcaseSta = new Ext.tree.TreeNode({
+    	id:'deathcaseSta',
+    	text:'死亡事故',
+    	leaf:false
+    });
+    
+    var injuredjobSta = new Ext.tree.TreeNode({
+    	id:'injuredjobSta',
+    	text:'按照工种分析',
+    	leaf:true
+    });
+    
+    var injureddetailtypeSta = new Ext.tree.TreeNode({
+    	id:'injureddetailtypeSta',
+    	text:'按照具体类别分析',
+    	leaf:true
+    });
+    
+    var injuredageSta = new Ext.tree.TreeNode({
+    	id:'injuredageSta',
+    	text:'按照年龄段分析',
+    	leaf:true
+    });
+    
+    
+    var injureddateSta = new Ext.tree.AsyncTreeNode({
+    	id:'injureddateSta',
+    	text:'按照时间段分析',
+    	leaf:true
+    });
+    
+    var occurtimeSta = new Ext.tree.AsyncTreeNode({
+    	id:'occurtimeSta',
+    	text:'按照时间段分析',
+    	leaf:true
+    });
+
+//报表生成	树 各个节点
+    
+    var caselevelRep = new Ext.tree.AsyncTreeNode({
+    	id:'caselevelRep',
+    	text:'按照事件级别',
+    	leaf:true
+//    	,listeners:{
+//    	    'click': function(){
+//    	    	alert("ok");
+//    	    }
+//    	}
+    });
+    
+    var occurtimeRep = new Ext.tree.AsyncTreeNode({
+    	id:'occurtimeRep',
+    	text:'按照事发时间',
+    	leaf:true
+    });
+    
+    var occurplaceRep = new Ext.tree.AsyncTreeNode({
+    	id:'occurplaceRep',
+    	text:'按照事发地点',
+    	leaf:true
+    });
+    
+    var casedepartmentRep = new Ext.tree.AsyncTreeNode({
+    	id:'casedepartmentRep',
+    	text:'按照科室名称',
+    	leaf:true
+    });
+    
+    var casestateRep = new Ext.tree.AsyncTreeNode({
+    	id:'casestateRep',
+    	text:'按照事件状态',
+    	leaf:true
+    });
+    
+    
+    
+    deathcaseSta.appendChild(injuredjobSta);
+    deathcaseSta.appendChild(injureddetailtypeSta);
+    deathcaseSta.appendChild(injuredageSta);
+    deathcaseSta.appendChild(injureddateSta);
+    
+    casetypeSta.appendChild(deathcaseSta);
+    
+    statistic.appendChild(departmentSta);
+    statistic.appendChild(dangerSta);
+    statistic.appendChild(caselevelSta);
+    statistic.appendChild(occurtimeSta);
+    statistic.appendChild(casetypeSta);
+    
+    report.appendChild(caselevelRep);
+    report.appendChild(occurtimeRep);
+    report.appendChild(occurplaceRep);
+    report.appendChild(casedepartmentRep);
+    report.appendChild(casestateRep);
+    
+    
+    root.appendChild(statistic);
+    root.appendChild(report);
+    
+    
+	var StatisticsTree=new Ext.tree.TreePanel({
+       animate:true,//以动画形式伸展,收缩子节点
+       collapsible:true,
+//       collapsed:true,
+       rootVisible:true,//是否显示根节点
+       autoScroll:true,
+       height:'95%',
+       lines:true,//节点之间连接的横竖线
+//       loader:new Ext.tree.TreeLoader(),//
+       root:root
+    });
+//节省代码，创建页面的函数
+    function createPage(_node,_store){
+    
+    	var text = _node.text;
+		var action = _node.id;
+	
+		var sm = new Ext.grid.CheckboxSelectionModel({singleSelect:false});
+	    var Grid = new Ext.grid.GridPanel({
+			title:text,
+	        store:_store,
+			sm:sm,
+	        cm: new Ext.grid.ColumnModel([
+				new Ext.grid.RowNumberer(),
+				sm, 
+	            {header:'事件级别',width:200,sortable:true,dataIndex:'caseLevel'}
+	        ]),
+			frame:true,
+			autoWidth:true,
+			anchor:'100%',
+			fitToFrame:true,
+			viewConfig : {forceFit : true }, 
+			autoScroll:true,
+	        collapsible: true,
+	        height:'100%',
+			tbar:[{
+				  id:'tab_cylindricality',
+				  iconCls:'statistics',
+				  text:'柱形图',
+				  handler:function(){
+					  var dataType = CenterTab.getActiveTab().id;
+					  var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+					  if(rows.length==0){
+						  Ext.Msg.alert('信息','请先选择您要统计的数据');
+					  }
+					  else{
+						  var data = '';
+						  for(var i=0;i<rows.length;i++){
+							  data += rows[i].get('评价指标')+';';
+						  }//for
+						  //alert(data);
+						  var splits = data.split(';');
+						  if(splits.length > 3){
+							  titleDifferent = splits[0]+'，'+splits[1]+'等';
+						  } 
+						  if(splits.length ==3){
+							  titleDifferent = splits[0]+'，'+splits[1];
+						  } 
+						  if(splits.length == 2){
+							  titleDifferent = splits[0];
+						  }
+						  var title = titleDifferent + '按数据总量形成的柱形图';
+						  var panel = CenterTab.getItem(action);
+						  var subtab = panel.findById('sub'+action);
+						  var subsubtab = subtab.getItem(title);
+						  if(subsubtab==null){
+							  subtab.add({
+										 id: title,
+										 title: title,
+										 closable: true,
+										 autoScroll: true,
+										 html: "<iframe id='"+data+"' name='"+data+"' src='../html/StatisticsBar.html' frameborder=0 width=100% height=100%></iframe>"
+															}).show();
+						  } 
+						  else {
+							  subtab.setActiveTab(subsubtab);
+						  }
+					  }
+				  }//handler
+				  },
+				  {
+				  id:'tab_pie',
+				  iconCls:'pie',
+				  text:'饼形图',
+				  handler:function(){
+				  }//handler
+				  }],
+	        iconCls:'icon-grid'
+	    });
+		var WestPanel=new Ext.Panel({
+			frame:true,
+			plain:true,
+			labelWidth:80,
+			bodyStyle:'position:relative',
+			autoScroll:true,
+			layout:'fit',
+			items:[Grid]
+									
+		});
+		var Tab=new Ext.TabPanel({
+			id:'sub'+action,
+			activeTab:0,
+			width:600,
+			tabPosition:'top',
+			deferredRender:false,
+			autoScroll :true,
+			enableTabScroll:true,
+			listeners:{
+				'contextmenu':function(tabsin,current,e){
+					var menu=new Ext.menu.Menu([{
+	                           text:'关闭当前',
+							   disabled:!current.closable,
+	                           handler:function(){
+								   tabsin.remove(current);
+							   }
+							   },
+							   {
+							   text:'关闭其他',
+							   handler:function(){
+								   tabsin.items.each(function(item){
+															  if(item.closable&&item!=current){
+																  tabsin.remove(item);
+															  }
+								   });
+							   }
+							   },
+							   {
+							   text:'关闭所有',
+							   handler:function(){
+								   tabsin.items.each(function(item){
+															  if(item.closable){
+																  tabsin.remove(item);
+															  }
+								   });
+							   }
+	                       }]);
+	                   menu.showAt(e.getPoint());
+				}
+	        },
+			plain:true,
+	        items:[{
+				   xtype:'panel',
+				   title:'介绍页',
+				  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+				
+				   }]
+	    });
+		Tab.on('beforeremove', function(cmp){
+				//释放iframe占用的内存
+				var iFrame = cmp.getEl().dom;
+				if(iFrame.src) {
+					iFrame.src = 'javascript:false';
+				    iFrame.parentNode.removeChild(iFrame);    
+	          		iFrame = null;
+	            	CollectGarbage();
+				}
+		}); 
+		var Panel=new Ext.Panel({
+				id:action,
+				title:text,
+				closable: true,
+	            layout:'border',
+	            items:[{
+	                    region:'west',
+	                    split:true,
+						title:'统计数据',
+	                    width:'30%',
+	                    minSize:80,
+	                    maxSize:200,
+	                    collapsible: true,
+	                    margins:'0 0 0 0',
+	                    layout:'fit',
+						defaults: {
+							autoScroll: true
+						},
+	                    items:[WestPanel]
+						},
+						{
+	                    region:'center',
+						layout:'fit',
+						split:true,
+						defaults: {
+							autoScroll: true
+						},
+	                    items:[Tab]
+				}]
+	    });
+		var tab = CenterTab.getItem(action);
+		if(tab == null){
+			CenterTab.add(Panel).show();
+		}
+		else{
+			CenterTab.setActiveTab(tab);
+		}     
+    }
+   
+//给树加click事件
+    StatisticsTree.on('click',function(node){
+								if(node.id=='departmentSta'){                      
+	var text = node.text;
+	var action = node.id;
+
+	
+	var statisticsData = "";
+	var count = 0;
+	var sm = new Ext.grid.CheckboxSelectionModel({
+//			singleSelect:false
+			listeners : {
+						rowselect : function(sm, row, rec) {
+							var str = statisticsData.substring(1,
+									statisticsData.length);
+							var list = str.split("；");
+							var isExist = false;
+							for ( var i = 0; i < list.length; i++) {
+								var name = list[i];
+								if (name == rec.get("name")) {
+									isExist = true;
+								}
+							}
+							if (!isExist) {
+								statisticsData = statisticsData + "；"
+										+ rec.get("name");
+							}
+							count++;
+							Ext.getCmp('tab_cylindricality').enable();
+							if (count >= 2) {
+								Ext.getCmp('tab_polyline').enable();
+							}
+							//Ext.getCmp('tab_pie').enable();
+
+						},
+						rowdeselect : function(sm, row, rec) {
+							statisticsData = statisticsData.replace("；"
+									+ rec.get("name"), "");
+							count--;
+							if (count == 0) {
+								Ext.getCmp('tab_cylindricality').disable();
+								//Ext.getCmp('tab_pie').disable();
+							}
+							if (count < 2) {
+								Ext.getCmp('tab_polyline').disable();
+							}
+						}
+
+					}
+			});
+    var Grid = new Ext.grid.GridPanel({
+		title:text,
+        store:departmentlist,
+		sm:sm,
+        cm: new Ext.grid.ColumnModel([
+			new Ext.grid.RowNumberer(),
+			sm, 
+            {header:'科室名称',width:200,sortable:true,dataIndex:'name'}
+        ]),
+		frame:true,
+		autoWidth:true,
+		anchor:'100%',
+		fitToFrame:true,
+		viewConfig : {forceFit : true }, 
+		autoScroll:true,
+        collapsible: true,
+        height:'100%',
+		tbar:[{
+			  id:'tab_cylindricality',
+			  iconCls:'statistics',
+			  text:'柱形图',
+			  disabled:true,
+			  handler:function(){
+				  var dataType = CenterTab.getActiveTab().id;
+				  var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+				  if(rows.length==0){
+					  Ext.Msg.alert('信息','请先选择您要统计的数据');
+				  }
+				  else{
+					  var data = '';
+					  var titleDifferent;
+					  for(var i=0;i<rows.length;i++){
+						  data += rows[i].get('name')+';';
+					  }//for
+					  alert(data);
+					  var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  alert(titleDifferent);
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0];
+					  }
+					  var title = titleDifferent + '按数据总量形成的柱形图';
+					  var panel = CenterTab.getItem(action);
+//					  alert(panel);
+					  var subtab = panel.findById('sub'+action);
+					  var subsubtab = subtab.getItem(title);
+					  if(subsubtab==null){
+						  subtab.add({
+									 id: title,
+									 title: title,
+									 closable: true,
+									 autoScroll: true,
+									 html: "<iframe id='"+data+"' name='"+data+"' src='jsp/StatisticsBar.jsp' frameborder=0 width=100% height=100%></iframe>"
+														}).show();
+					  } 
+					  else {
+						  subtab.setActiveTab(subsubtab);
+					  }
+				  }
+			  }//handler
+			  },
+//			  {
+//			  id:'tab_pie',
+//			  iconCls:'pie',
+//			  text:'饼形图',
+//			  handler:function(){
+//			  }//handler
+//			  },
+			  	{
+				id : "tab_polyline",
+				iconCls : "polyline",
+				text : "折线图",
+				disabled:true,
+				handler :function(){}
+				}],
+        iconCls:'icon-grid'
+    });
+	var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Grid]
+								
+	});
+	var Tab=new Ext.TabPanel({
+		id:'sub'+action,
+		activeTab:0,
+		width:600,
+		tabPosition:'top',
+		deferredRender:false,
+		autoScroll :true,
+		enableTabScroll:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+		plain:true,
+        items:[{
+			   xtype:'panel',
+			   title:'介绍页',
+			  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+			
+			   }]
+    });
+	Tab.on('beforeremove', function(cmp){
+			//释放iframe占用的内存
+			var iFrame = cmp.getEl().dom;
+			if(iFrame.src) {
+				iFrame.src = 'javascript:false';
+			    iFrame.parentNode.removeChild(iFrame);    
+          		iFrame = null;
+            	CollectGarbage();
+			}
+	}); 
+	var Panel=new Ext.Panel({
+			id:action,
+			title:text,
+			closable: true,
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计数据',
+                    width:'30%',
+                    minSize:80,
+                    maxSize:200,
+                    collapsible: true,
+                    margins:'0 0 0 0',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[WestPanel]
+					},
+					{
+                    region:'center',
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[Tab]
+			}]
+    });
+	var tab = CenterTab.getItem(action);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}     
+										
+									}//if(node.isLeaf())
+//								if(node.id=='caselevelRep'){
+//								    
+//								}
+								if(node.id=='caselevelSta' || node.id == 'caselevelRep'){
+	
+	var text = node.text;
+	var action = node.id;
+
+	var statisticsData = "";
+	var count = 0;
+	var sm = new Ext.grid.CheckboxSelectionModel({
+//			singleSelect:false
+			listeners : {
+						rowselect : function(sm, row, rec) {
+							var str = statisticsData.substring(1,
+									statisticsData.length);
+							var list = str.split("；");
+							var isExist = false;
+							for ( var i = 0; i < list.length; i++) {
+								var name = list[i];
+//								alert(rec.get("caseLevel"));
+								if (name == rec.get("caseLevel")) {
+									isExist = true;
+								}
+							}
+							if (!isExist) {
+								statisticsData = statisticsData + "；"
+										+ rec.get("caseLevel");
+							}
+							count++;
+//							Ext.getCmp('tab_cylindricality').enable();
+//							if (count >= 2) {
+//								Ext.getCmp('tab_polyline').enable();
+//							}
+							//Ext.getCmp('tab_pie').enable();
+
+						},
+						rowdeselect : function(sm, row, rec) {
+							statisticsData = statisticsData.replace("；"
+									+ rec.get("caseLevel"), "");
+							count--;
+//							if (count == 0) {
+//								Ext.getCmp('tab_cylindricality').disable();
+//								//Ext.getCmp('tab_pie').disable();
+//							}
+//							if (count < 2) {
+//								Ext.getCmp('tab_polyline').disable();
+//							}
+						}
+
+					}
+			});
+	if(node.id == 'caselevelSta'){
+	    var toolbar = new Ext.Toolbar([
+//	    	toolbar.add(
+	    	{
+			  id:'tab_cylindricality',
+			  iconCls:'statistics',
+			  disabled:true,
+			  text:'柱形图',
+			  handler:function(){
+				  var dataType = CenterTab.getActiveTab().id;
+				  var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+				  if(rows.length==0){
+					  Ext.Msg.alert('信息','请先选择您要统计的数据');
+				  }
+				  else{
+					  var data = '';
+					  for(var i=0;i<rows.length;i++){
+						  data += rows[i].get('caseLevel')+';';
+					  }//for
+					  alert(data);
+					  var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'，'+splits[2];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  }
+					  var title = titleDifferent + '按数据总量形成的柱形图';
+					  var panel = CenterTab.getItem(action);
+					  var subtab = panel.findById('sub'+action);
+					  var subsubtab = subtab.getItem(title);
+					  if(subsubtab==null){
+						  subtab.add({
+									 id: title,
+									 title: title,
+									 closable: true,
+									 autoScroll: true,
+									 html: "<iframe id='"+data+"' name='"+data+"' src='../jsp/StatisticsBar.jsp' frameborder=0 width=100% height=100%></iframe>"
+														}).show();
+					  } 
+					  else {
+						  subtab.setActiveTab(subsubtab);
+					  }
+				  }
+			  }//handler
+			  },
+			  {
+				id : "tab_polyline",
+				iconCls : "polyline",
+				text : "折线图",
+				disabled:true,
+				handler :function(){}
+				}
+		]);
+	}// if(node.id == 'caselevelSta')
+	else if(node.id == 'caselevelRep'){
+	    var toolbar = new Ext.Toolbar([
+//	    	toolbar.add(
+	    	{
+	        id : "tab_table",
+			text : "确定",
+//			disabled:true,
+			handler :function(){
+			    var rows=Grid.getSelectionModel().getSelections()//得到选择项
+			    if(rows.length==0){
+					Ext.Msg.alert('信息','请先选择您要统计的数据');
+				}
+				else{
+				    var data = '';
+					for(var i=0;i<rows.length;i++){
+						data += rows[i].get('caseLevel')+';';
+					}//for
+					alert(data);
+					addTabPage();
+//					var splits = data.split(';');
+				}
+			}//handler
+			
+	    }
+	    ]);
+	    function addTabPage(){
+	        var tabPage = Tab.add({
+	           title: 'test',
+	           closable:true
+	        })
+	    }
+	}
+    var Grid = new Ext.grid.GridPanel({
+		title:text,
+        store:caseLevel,
+		sm:sm,
+        cm: new Ext.grid.ColumnModel([
+			new Ext.grid.RowNumberer(),
+			sm, 
+            {header:'事件级别',width:200,sortable:true,dataIndex:'caseLevel'}
+        ]),
+		frame:true,
+		autoWidth:true,
+		anchor:'100%',
+		fitToFrame:true,
+		viewConfig : {forceFit : true }, 
+		autoScroll:true,
+        collapsible: true,
+        height:'100%',
+		tbar:toolbar,
+        iconCls:'icon-grid'
+    });
+	var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Grid]
+								
+	});
+	var Tab=new Ext.TabPanel({
+		id:'sub'+action,
+		activeTab:0,
+		width:600,
+		tabPosition:'top',
+		deferredRender:false,
+		autoScroll :true,
+		enableTabScroll:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+		plain:true,
+        items:[{
+			   xtype:'panel',
+			   title:'介绍页',
+			  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+			
+			   }]
+    });
+	Tab.on('beforeremove', function(cmp){
+			//释放iframe占用的内存
+			var iFrame = cmp.getEl().dom;
+			if(iFrame.src) {
+				iFrame.src = 'javascript:false';
+			    iFrame.parentNode.removeChild(iFrame);    
+          		iFrame = null;
+            	CollectGarbage();
+			}
+	}); 
+	
+	var Panel=new Ext.Panel({
+			id:action,
+			title:text,
+			closable: true,
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计数据',
+                    width:'30%',
+                    minSize:80,
+                    maxSize:200,
+                    collapsible: true,
+                    margins:'0 0 0 0',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[WestPanel]
+					},
+					{
+                    region:'center',
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[Tab]
+			}]
+    });
+	var tab = CenterTab.getItem(action);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}     
+										
+									}
+									if(node.id=='dangerSta'){
+	var text = node.text;
+	var action = node.id;
+	
+	var statisticsData = "";
+	var count = 0;
+	var sm = new Ext.grid.CheckboxSelectionModel({
+//			singleSelect:false
+			listeners : {
+						rowselect : function(sm, row, rec) {
+							var str = statisticsData.substring(1,
+									statisticsData.length);
+							var list = str.split("；");
+							var isExist = false;
+							for ( var i = 0; i < list.length; i++) {
+								var name = list[i];
+//								alert(rec.get("caseLevel"));
+								if (name == rec.get("caseDanger")) {
+									isExist = true;
+								}
+							}
+							if (!isExist) {
+								statisticsData = statisticsData + "；"
+										+ rec.get("caseDanger");
+							}
+							count++;
+							Ext.getCmp('tab_cylindricality').enable();
+							if (count >= 2) {
+								Ext.getCmp('tab_polyline').enable();
+							}
+							//Ext.getCmp('tab_pie').enable();
+
+						},
+						rowdeselect : function(sm, row, rec) {
+							statisticsData = statisticsData.replace("；"
+									+ rec.get("caseDanger"), "");
+							count--;
+							if (count == 0) {
+								Ext.getCmp('tab_cylindricality').disable();
+								//Ext.getCmp('tab_pie').disable();
+							}
+							if (count < 2) {
+								Ext.getCmp('tab_polyline').disable();
+							}
+						}
+
+					}
+			});
+    var Grid = new Ext.grid.GridPanel({
+		title:text,
+        store:caseDanger,
+		sm:sm,
+        cm: new Ext.grid.ColumnModel([
+			new Ext.grid.RowNumberer(),
+			sm, 
+            {header:'按照危险源',width:200,sortable:true,dataIndex:'caseDanger'}
+        ]),
+		frame:true,
+		autoWidth:true,
+		anchor:'100%',
+		fitToFrame:true,
+		viewConfig : {forceFit : true }, 
+		autoScroll:true,
+        collapsible: true,
+        height:'100%',
+		tbar:[{
+			  id:'tab_cylindricality',
+			  iconCls:'statistics',
+			  disabled:true,
+			  text:'柱形图',
+			  handler:function(){
+				  var dataType = CenterTab.getActiveTab().id;
+				  var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+				  if(rows.length==0){
+					  Ext.Msg.alert('信息','请先选择您要统计的数据');
+				  }
+				  else{
+					  var data = '';
+					  for(var i=0;i<rows.length;i++){
+						  data += rows[i].get('caseDanger')+';';
+					  }//for
+					  //alert(data);
+					  var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0];
+					  }
+					  var title = titleDifferent + '按数据总量形成的柱形图';
+					  var panel = CenterTab.getItem(action);
+					  var subtab = panel.findById('sub'+action);
+					  var subsubtab = subtab.getItem(title);
+					  if(subsubtab==null){
+						  subtab.add({
+									 id: title,
+									 title: title,
+									 closable: true,
+									 autoScroll: true,
+									 html: "<iframe id='"+data+"' name='"+data+"' src='../page/jsp/StatisticsBar.html' frameborder=0 width=100% height=100%></iframe>"
+														}).show();
+					  } 
+					  else {
+						  subtab.setActiveTab(subsubtab);
+					  }
+				  }
+			  }//handler
+			  },
+			  {
+				id : "tab_polyline",
+				iconCls : "polyline",
+				text : "折线图",
+				disabled:true,
+				handler :function(){}
+				}],
+        iconCls:'icon-grid'
+    });
+	var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Grid]
+								
+	});
+	var Tab=new Ext.TabPanel({
+		id:'sub'+action,
+		activeTab:0,
+		width:600,
+		tabPosition:'top',
+		deferredRender:false,
+		autoScroll :true,
+		enableTabScroll:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+		plain:true,
+        items:[{
+			   xtype:'panel',
+			   title:'介绍页',
+			  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+			
+			   }]
+    });
+	Tab.on('beforeremove', function(cmp){
+			//释放iframe占用的内存
+			var iFrame = cmp.getEl().dom;
+			if(iFrame.src) {
+				iFrame.src = 'javascript:false';
+			    iFrame.parentNode.removeChild(iFrame);    
+          		iFrame = null;
+            	CollectGarbage();
+			}
+	}); 
+	
+	var Panel=new Ext.Panel({
+			id:action,
+			title:text,
+			closable: true,
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计数据',
+                    width:'30%',
+                    minSize:80,
+                    maxSize:200,
+                    collapsible: true,
+                    margins:'0 0 0 0',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[WestPanel]
+					},
+					{
+                    region:'center',
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[Tab]
+			}]
+    });
+	var tab = CenterTab.getItem(action);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}     
+										
+									}if(node.id=='occurtimeSta'){
+	var text = node.text;
+	var action = node.id;
+	
+	
+    var Year = new Ext.form.FieldSet({
+    	title:'按照年份',
+    	autoWidth:true,
+    	autoHeight:true,
+//    	heitht:'auto',
+    	layout:'form',
+    	labelWidth:40,
+    	items:[{
+    		xtype:'combo',
+    		fieldLabel:'选择年份'
+    	}],
+    	buttons:[{
+    		text:'柱状图',
+//    		disabled:true,
+    		handler:function(){}
+    	},{
+    		text:'折线图',
+//    		disabled:true,
+    		handler:function(){}
+    	}]
+    });
+    var YearPeriod = new Ext.form.FieldSet({
+    	title:'按照年份段',
+    	autoWidth:true,
+    	autoHeight:true,
+//    	heitht:'auto',
+    	layout:'form',
+    	labelWidth:30,
+    	items:[{
+    		xtype:'combo',
+    		fieldLabel:'年份从'
+    	},{
+    		xtype:'combo',
+    		fieldLabel:'到'
+    	}],
+    	buttons:[{
+    		text:'柱状图',
+//    		disabled:true,
+    		handler:function(){}
+    	},{
+    		text:'折线图',
+//    		disabled:true,
+    		handler:function(){}
+    	}]
+    });
+//    var _Panel = new Ext.form.FieldSet({
+//    	title:text,
+//    	layout:'form',
+//    	items:[Year,YearPeriod]
+//    })
+    
+	var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Year,YearPeriod]
+								
+	});
+	var Tab=new Ext.TabPanel({
+		id:'sub'+action,
+		activeTab:0,
+		width:600,
+		tabPosition:'top',
+		deferredRender:false,
+		autoScroll :true,
+		enableTabScroll:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+		plain:true,
+        items:[{
+			   xtype:'panel',
+			   title:'介绍页',
+			  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+			
+			   }]
+    });
+	Tab.on('beforeremove', function(cmp){
+			//释放iframe占用的内存
+			var iFrame = cmp.getEl().dom;
+			if(iFrame.src) {
+				iFrame.src = 'javascript:false';
+			    iFrame.parentNode.removeChild(iFrame);    
+          		iFrame = null;
+            	CollectGarbage();
+			}
+	}); 
+	var Panel=new Ext.Panel({
+			id:action,
+			title:text,
+			closable: true,
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计数据',
+                    width:'30%',
+                    minSize:80,
+                    maxSize:240,
+                    collapsible: true,
+                    margins:'0 0 0 0',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[WestPanel]
+					},
+					{
+                    region:'center',
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[Tab]
+			}]
+    });
+	var tab = CenterTab.getItem(action);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}     
+										
+									}
+									if(node.id=='injuredjobSta'){
+	var text = node.text;
+	var action = node.id;
+
+	var statisticsData = "";
+	var count = 0;
+	var sm = new Ext.grid.CheckboxSelectionModel({
+//			singleSelect:false
+			listeners : {
+						rowselect : function(sm, row, rec) {
+							var str = statisticsData.substring(1,
+									statisticsData.length);
+							var list = str.split("；");
+							var isExist = false;
+							for ( var i = 0; i < list.length; i++) {
+								var name = list[i];
+//								alert(rec.get("caseLevel"));
+								if (name == rec.get("caseJob")) {
+									isExist = true;
+								}
+							}
+							if (!isExist) {
+								statisticsData = statisticsData + "；"
+										+ rec.get("caseJob");
+							}
+							count++;
+							Ext.getCmp('tab_cylindricality').enable();
+							if (count >= 2) {
+								Ext.getCmp('tab_polyline').enable();
+							}
+							//Ext.getCmp('tab_pie').enable();
+
+						},
+						rowdeselect : function(sm, row, rec) {
+							statisticsData = statisticsData.replace("；"
+									+ rec.get("caseJob"), "");
+							count--;
+							if (count == 0) {
+								Ext.getCmp('tab_cylindricality').disable();
+								//Ext.getCmp('tab_pie').disable();
+							}
+							if (count < 2) {
+								Ext.getCmp('tab_polyline').disable();
+							}
+						}
+
+					}
+			});
+    var Grid = new Ext.grid.GridPanel({
+		title:text,
+        store:deathcaseJob,
+		sm:sm,
+        cm: new Ext.grid.ColumnModel([
+			new Ext.grid.RowNumberer(),
+			sm, 
+            {header:'死亡人员工种',width:200,sortable:true,dataIndex:'caseJob'}
+        ]),
+		frame:true,
+		autoWidth:true,
+		anchor:'100%',
+		fitToFrame:true,
+		viewConfig : {forceFit : true }, 
+		autoScroll:true,
+        collapsible: true,
+        height:'100%',
+		tbar:[{
+			  id:'tab_cylindricality',
+			  iconCls:'statistics',
+			  disabled:true,
+			  text:'柱形图',
+			  handler:function(){
+				  var dataType = CenterTab.getActiveTab().id;
+				  var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+				  if(rows.length==0){
+					  Ext.Msg.alert('信息','请先选择您要统计的数据');
+				  }
+				  else{
+					  var data = '';
+					  for(var i=0;i<rows.length;i++){
+						  data += rows[i].get('评价指标')+';';
+					  }//for
+					  //alert(data);
+					  var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0];
+					  }
+					  var title = titleDifferent + '按数据总量形成的柱形图';
+					  var panel = CenterTab.getItem(action);
+					  var subtab = panel.findById('sub'+action);
+					  var subsubtab = subtab.getItem(title);
+					  if(subsubtab==null){
+						  subtab.add({
+									 id: title,
+									 title: title,
+									 closable: true,
+									 autoScroll: true,
+									 html: "<iframe id='"+data+"' name='"+data+"' src='../page/jsp/StatisticsBar.jsp' frameborder=0 width=100% height=100%></iframe>"
+														}).show();
+					  } 
+					  else {
+						  subtab.setActiveTab(subsubtab);
+					  }
+				  }
+			  }//handler
+			  },
+			  {
+				id : "tab_polyline",
+				iconCls : "polyline",
+				text : "折线图",
+				disabled:true,
+				handler :function(){}
+				}],
+        iconCls:'icon-grid'
+    });
+	var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Grid]
+								
+	});
+	var Tab=new Ext.TabPanel({
+		id:'sub'+action,
+		activeTab:0,
+		width:600,
+		tabPosition:'top',
+		deferredRender:false,
+		autoScroll :true,
+		enableTabScroll:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+		plain:true,
+        items:[{
+			   xtype:'panel',
+			   title:'介绍页',
+			  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+			
+			   }]
+    });
+	Tab.on('beforeremove', function(cmp){
+			//释放iframe占用的内存
+			var iFrame = cmp.getEl().dom;
+			if(iFrame.src) {
+				iFrame.src = 'javascript:false';
+			    iFrame.parentNode.removeChild(iFrame);    
+          		iFrame = null;
+            	CollectGarbage();
+			}
+	}); 
+	var Panel=new Ext.Panel({
+			id:action,
+			title:text,
+			closable: true,
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计数据',
+                    width:'30%',
+                    minSize:80,
+                    maxSize:200,
+                    collapsible: true,
+                    margins:'0 0 0 0',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[WestPanel]
+					},
+					{
+                    region:'center',
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[Tab]
+			}]
+    });
+	var tab = CenterTab.getItem(action);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}     
+										
+									}
+									if(node.id=='injureddetailtypeSta'){
+	var text = node.text;
+	var action = node.id;
+
+
+	var statisticsData = "";
+	var count = 0;
+	var sm = new Ext.grid.CheckboxSelectionModel({
+//			singleSelect:false
+			listeners : {
+						rowselect : function(sm, row, rec) {
+							var str = statisticsData.substring(1,
+									statisticsData.length);
+							var list = str.split("；");
+							var isExist = false;
+							for ( var i = 0; i < list.length; i++) {
+								var name = list[i];
+//								alert(rec.get("caseLevel"));
+								if (name == rec.get("deathcaseType")) {
+									isExist = true;
+								}
+							}
+							if (!isExist) {
+								statisticsData = statisticsData + "；"
+										+ rec.get("deathcaseType");
+							}
+							count++;
+							Ext.getCmp('tab_cylindricality').enable();
+							if (count >= 2) {
+								Ext.getCmp('tab_polyline').enable();
+							}
+							//Ext.getCmp('tab_pie').enable();
+
+						},
+						rowdeselect : function(sm, row, rec) {
+							statisticsData = statisticsData.replace("；"
+									+ rec.get("deathcaseType"), "");
+							count--;
+							if (count == 0) {
+								Ext.getCmp('tab_cylindricality').disable();
+								//Ext.getCmp('tab_pie').disable();
+							}
+							if (count < 2) {
+								Ext.getCmp('tab_polyline').disable();
+							}
+						}
+
+					}
+			});
+    var Grid = new Ext.grid.GridPanel({
+		title:text,
+        store:deathcaseType,
+		sm:sm,
+        cm: new Ext.grid.ColumnModel([
+			new Ext.grid.RowNumberer(),
+			sm, 
+            {header:'死亡事件具体类别',width:200,sortable:true,dataIndex:'deathcaseType'}
+        ]),
+		frame:true,
+		autoWidth:true,
+		anchor:'100%',
+		fitToFrame:true,
+		viewConfig : {forceFit : true }, 
+		autoScroll:true,
+        collapsible: true,
+        height:'100%',
+		tbar:[{
+			  id:'tab_cylindricality',
+			  iconCls:'statistics',
+			  text:'柱形图',
+			  handler:function(){
+				  var dataType = CenterTab.getActiveTab().id;
+				  var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+				  if(rows.length==0){
+					  Ext.Msg.alert('信息','请先选择您要统计的数据');
+				  }
+				  else{
+					  var data = '';
+					  for(var i=0;i<rows.length;i++){
+						  data += rows[i].get('deathcaseType')+';';
+					  }//for
+					  //alert(data);
+					  var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0];
+					  }
+					  var title = titleDifferent + '按数据总量形成的柱形图';
+					  var panel = CenterTab.getItem(action);
+					  var subtab = panel.findById('sub'+action);
+					  var subsubtab = subtab.getItem(title);
+					  if(subsubtab==null){
+						  subtab.add({
+									 id: title,
+									 title: title,
+									 closable: true,
+									 autoScroll: true,
+									 html: "<iframe id='"+data+"' name='"+data+"' src='../page/jsp/StatisticsBar.jsp' frameborder=0 width=100% height=100%></iframe>"
+														}).show();
+					  } 
+					  else {
+						  subtab.setActiveTab(subsubtab);
+					  }
+				  }
+			  }//handler
+			  },
+			  {
+			  id:'tab_polyline',
+			  iconCls:'polyline',
+			  text:'折线图',
+			  disabled:true,
+			  handler:function(){
+			  }//handler
+			  }],
+        iconCls:'icon-grid'
+    });
+	var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Grid]
+								
+	});
+	var Tab=new Ext.TabPanel({
+		id:'sub'+action,
+		activeTab:0,
+		width:600,
+		tabPosition:'top',
+		deferredRender:false,
+		autoScroll :true,
+		enableTabScroll:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+		plain:true,
+        items:[{
+			   xtype:'panel',
+			   title:'介绍页',
+			  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+			
+			   }]
+    });
+	Tab.on('beforeremove', function(cmp){
+			//释放iframe占用的内存
+			var iFrame = cmp.getEl().dom;
+			if(iFrame.src) {
+				iFrame.src = 'javascript:false';
+			    iFrame.parentNode.removeChild(iFrame);    
+          		iFrame = null;
+            	CollectGarbage();
+			}
+	}); 
+	var Panel=new Ext.Panel({
+			id:action,
+			title:text,
+			closable: true,
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计数据',
+                    width:'30%',
+                    minSize:80,
+                    maxSize:200,
+                    collapsible: true,
+                    margins:'0 0 0 0',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[WestPanel]
+					},
+					{
+                    region:'center',
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[Tab]
+			}]
+    });
+	var tab = CenterTab.getItem(action);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}     
+										
+									}
+  
+									if(node.id=='injuredageSta'){
+				var text = node.text;
+	var action = node.id;
+	Ext.grid.dummyData=[
+    ['决策准确性','9',''],
+	['反应速度','8.5',''],
+	['效果','9',''],
+	['综合评价','9','']
+    ];//创建表格数据
+    var Record=Ext.data.Record.create([   
+        {name:'评价指标',mapping:0},   
+        {name:'得分',mapping:1},   
+        {name:'评价',mapping:2}
+    ]); //创建记录类型Record，mapping值为字段值对应数组中数据的索引位置      
+    var store=new Ext.data.Store({   
+        reader:new Ext.data.ArrayReader({id:0},Record),   
+        data:Ext.grid.dummyData  
+    });//配置数据集
+	var sm = new Ext.grid.CheckboxSelectionModel({singleSelect:false});
+    var Grid = new Ext.grid.GridPanel({
+		title:text,
+        store:store,
+		sm:sm,
+        cm: new Ext.grid.ColumnModel([
+			new Ext.grid.RowNumberer(),
+			sm, 
+            {header:'评价指标',width:200,sortable:true,dataIndex:'评价指标'},
+            {header:"得分",width:100,sortable:true,dataIndex:'得分'},
+            {header:"评价",width:300,sortable:true,dataIndex:'评价'}
+        ]),
+		frame:true,
+		autoWidth:true,
+		anchor:'100%',
+		fitToFrame:true,
+		viewConfig : {forceFit : true }, 
+		autoScroll:true,
+        collapsible: true,
+        height:'100%',
+		tbar:[{
+			  id:'tab_cylindricality',
+			  iconCls:'statistics',
+			  text:'柱形图',
+			  handler:function(){
+				  var dataType = CenterTab.getActiveTab().id;
+				  var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+				  if(rows.length==0){
+					  Ext.Msg.alert('信息','请先选择您要统计的数据');
+				  }
+				  else{
+					  var data = '';
+					  for(var i=0;i<rows.length;i++){
+						  data += rows[i].get('评价指标')+';';
+					  }//for
+					  //alert(data);
+					  var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0];
+					  }
+					  var title = titleDifferent + '按数据总量形成的柱形图';
+					  var panel = CenterTab.getItem(action);
+					  var subtab = panel.findById('sub'+action);
+					  var subsubtab = subtab.getItem(title);
+					  if(subsubtab==null){
+						  subtab.add({
+									 id: title,
+									 title: title,
+									 closable: true,
+									 autoScroll: true,
+									 html: "<iframe id='"+data+"' name='"+data+"' src='../page/jsp/StatisticsBar.html' frameborder=0 width=100% height=100%></iframe>"
+														}).show();
+					  } 
+					  else {
+						  subtab.setActiveTab(subsubtab);
+					  }
+				  }
+			  }//handler
+			  },
+			  {
+			  id:'tab_pie',
+			  iconCls:'pie',
+			  text:'饼形图',
+			  handler:function(){
+			  }//handler
+			  }],
+        iconCls:'icon-grid'
+    });
+	var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Grid]
+								
+	});
+	var Tab=new Ext.TabPanel({
+		id:'sub'+action,
+		activeTab:0,
+		width:600,
+		tabPosition:'top',
+		deferredRender:false,
+		autoScroll :true,
+		enableTabScroll:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+		plain:true,
+        items:[{
+			   xtype:'panel',
+			   title:'介绍页',
+			  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+			
+			   }]
+    });
+	Tab.on('beforeremove', function(cmp){
+			//释放iframe占用的内存
+			var iFrame = cmp.getEl().dom;
+			if(iFrame.src) {
+				iFrame.src = 'javascript:false';
+			    iFrame.parentNode.removeChild(iFrame);    
+          		iFrame = null;
+            	CollectGarbage();
+			}
+	}); 
+	var Panel=new Ext.Panel({
+			id:action,
+			title:text,
+			closable: true,
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计数据',
+                    width:'30%',
+                    minSize:80,
+                    maxSize:200,
+                    collapsible: true,
+                    margins:'0 0 0 0',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[WestPanel]
+					},
+					{
+                    region:'center',
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[Tab]
+			}]
+    });
+	var tab = CenterTab.getItem(action);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}    
+									}
+									if(node.id=='casedepartmentRep'){
+	var text = node.text;
+	var action = node.id;
+
+	
+	var statisticsData = "";
+	var count = 0;
+	var sm = new Ext.grid.CheckboxSelectionModel({
+//			singleSelect:false
+			listeners : {
+						rowselect : function(sm, row, rec) {
+							var str = statisticsData.substring(1,
+									statisticsData.length);
+							var list = str.split("；");
+							var isExist = false;
+							for ( var i = 0; i < list.length; i++) {
+								var name = list[i];
+								if (name == rec.get("name")) {
+									isExist = true;
+								}
+							}
+							if (!isExist) {
+								statisticsData = statisticsData + "；"
+										+ rec.get("name");
+							}
+							count++;
+							Ext.getCmp('report_table').enable();
+
+						},
+						rowdeselect : function(sm, row, rec) {
+							statisticsData = statisticsData.replace("；"
+									+ rec.get("name"), "");
+							count--;
+							if (count == 0) {
+								Ext.getCmp('report_table').disable();
+								//Ext.getCmp('tab_pie').disable();
+							}
+						}
+
+					}
+			});
+    var Grid = new Ext.grid.GridPanel({
+		title:text,
+        store:departmentlist,
+		sm:sm,
+        cm: new Ext.grid.ColumnModel([
+			new Ext.grid.RowNumberer(),
+			sm, 
+            {header:'科室名称',width:200,sortable:true,dataIndex:'name'}
+        ]),
+		frame:true,
+		autoWidth:true,
+		anchor:'100%',
+		fitToFrame:true,
+		viewConfig : {forceFit : true }, 
+		autoScroll:true,
+        collapsible: true,
+        height:'100%',
+		tbar:[{
+			  id:'report_table',
+			  
+			  text:'报表生成',
+			  disabled:true
+			  
+   			 }],
+        iconCls:'icon-grid'
+    });
+	var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Grid]
+								
+	});
+	var Tab=new Ext.TabPanel({
+		id:'sub'+action,
+		activeTab:0,
+		width:600,
+		tabPosition:'top',
+		deferredRender:false,
+		autoScroll :true,
+		enableTabScroll:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+		plain:true,
+        items:[{
+			   xtype:'panel',
+			   title:'介绍页',
+			  html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成报表</h1></font><br><hr />'
+			
+			   }]
+    });
+	Tab.on('beforeremove', function(cmp){
+			//释放iframe占用的内存
+			var iFrame = cmp.getEl().dom;
+			if(iFrame.src) {
+				iFrame.src = 'javascript:false';
+			    iFrame.parentNode.removeChild(iFrame);    
+          		iFrame = null;
+            	CollectGarbage();
+			}
+	}); 
+	var Panel=new Ext.Panel({
+			id:action,
+			title:text,
+			closable: true,
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计数据',
+                    width:'30%',
+                    minSize:80,
+                    maxSize:200,
+                    collapsible: true,
+                    margins:'0 0 0 0',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[WestPanel]
+					},
+					{
+                    region:'center',
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[Tab]
+			}]
+    });
+	var tab = CenterTab.getItem(action);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}     
+										
+									}
+	});
+	
+   //供用户选择的表格数据
+   var CenterTab=new Ext.TabPanel({
+		activeTab:0,
+        //width:100,
+		tabPosition:'top',
+		defaults:{autoScroll: true},
+		plain:true,
+		listeners:{
+			'contextmenu':function(tabsin,current,e){
+				var menu=new Ext.menu.Menu([{
+                           text:'关闭当前',
+						   disabled:!current.closable,
+                           handler:function(){
+							   tabsin.remove(current);
+						   }
+						   },
+						   {
+						   text:'关闭其他',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable&&item!=current){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+						   },
+						   {
+						   text:'关闭所有',
+						   handler:function(){
+							   tabsin.items.each(function(item){
+														  if(item.closable){
+															  tabsin.remove(item);
+														  }
+							   });
+						   }
+                       }]);
+                   menu.showAt(e.getPoint());
+			}
+        },
+        items:[{
+			   xtype:'panel',
+			   title:'欢迎页',
+			   html:'<br><font size="+2" color="#336699"><h1>欢迎进入安全事故应急救援联动管理软件平台</h1></font><br><hr />'
+			   //html:'<br><br><em><h1>欢迎进入应急信息资源交换与共享平台</h1></em>'
+			   }]
+    });
+	var ProcessStatistics = new Ext.Viewport({
+            layout:'border',
+            items:[{
+                    region:'west',
+                    split:true,
+					title:'统计和报表',
+                    width:'16%',
+                    minSize:200,
+                    maxSize:400,
+                    collapsible:true,
+                    margins:'0 0 0 5',
+                    layout:'fit',
+					defaults: {
+						autoScroll: true
+					},
+                    items:[StatisticsTree]
+					},
+					{
+                    region:'center',
+					//collapsible: true,
+					layout:'fit',
+					split:true,
+					defaults: {
+						autoScroll: true
+					},
+                    items:[CenterTab]
+			}]
+    });
+}
+Ext.onReady(Statistic);

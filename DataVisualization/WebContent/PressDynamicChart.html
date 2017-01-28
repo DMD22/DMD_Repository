@@ -1,0 +1,642 @@
+<html>
+<head>
+<link rel="stylesheet" href="../css/jquery-ui.css">
+<link rel="stylesheet" href="../css/style.css">
+<meta charset="UTF-8" />
+<script src="../js/jquery-3.1.1.js"></script>
+<script src="../js/jquery-ui.js"></script>
+<script src="../js/spin.js"></script>
+<script src="../js/highcharts.js"></script>
+<script src="../js/highcharts-more.js"></script>
+<body>
+<div id="all" style="width:100%;height:1000px">
+<div id="utils" style="float:left;width:25%;height:100%;border-style:ridge;border-color:#3893d3;border-width:3px;">
+      起始日期：<input type="text" id="start_datepicker" name="start_date" value="2016-07-01"><br>
+       结束日期：<input type="text" id="end_datepicker" name="end_date" value="2016-07-03"><br>    
+  ID:<input type="text" id="select_id" name="select_id" value="1"><button onclick="getData()">加载</button><br>
+<!--        区域:<input type="text" id="select_address" name="select_address"><button onclick="getDataByAddress()">加载</button> -->
+</div>
+<div id="content" style="width:73%;height:100%;float:left;border-style:ridge;border-color:#3893d3;border-width:3px;">
+<div id="container-1" style="width: 550px; height: 300px; margin: 0 auto"></div>
+<div id="container1" style="width: 700px; height: 200px; margin: 0 auto;"></div>
+<div id="container-2" style="width: 550px; height: 300px; margin: 0 auto"></div>
+<div id="container2" style="width: 700px; height: 200px; margin: 0 auto;"></div>
+</div>
+<div id="spinner" style="margin: 0 auto;width:50px;padding-top:150px"></div>
+</div>
+<script>
+//spinner
+var opts = {            
+        lines: 13, // 花瓣数目
+        length: 20, // 花瓣长度
+        width: 10, // 花瓣宽度
+        radius: 30, // 花瓣距中心半径
+        corners: 1, // 花瓣圆滑度 (0-1)
+        rotate: 0, // 花瓣旋转角度
+        direction: 1, // 花瓣旋转方向 1: 顺时针, -1: 逆时针
+        color: '#000000', // 花瓣颜色
+        speed: 1, // 花瓣旋转速度
+        trail: 60, // 花瓣旋转时的拖影(百分比)
+        shadow: false, // 花瓣是否显示阴影
+        hwaccel: false, //spinner 是否启用硬件加速及高速旋转            
+        className: 'spinner', // spinner css 样式名称
+        zIndex: 2e9, // spinner的z轴 (默认是2000000000)
+        top: 'auto', // spinner 相对父容器Top定位 单位 px
+        left: 'auto'// spinner 相对父容器Left定位 单位 px
+    };
+var spinner = new Spinner(opts);
+//list
+var value1_Array=[],value2_Array=[],value3_Array=[],value4_Array=[],date_Array=[];
+//datepicker
+var start_date=document.getElementById("start_datepicker").value,end_date=document.getElementById("end_datepicker").value;
+var start_dateObj=new Date(start_date).getTime(),end_dateObj=new Date(end_date).getTime();
+$(function() {
+$("#start_datepicker").datepicker({
+  showOtherMonths: true,
+  selectOtherMonths: true,
+  dateFormat:"yy-mm-dd",
+  onSelect: function(selectedDate) {//选择日期后执行的操作 
+    	 start_date=selectedDate; 
+    	 start_dateObj=new Date(start_date).getTime();
+    	 }
+ });
+});
+$(function() {
+    $("#end_datepicker").datepicker({
+      showOtherMonths: true,
+      selectOtherMonths: true,
+      dateFormat:"yy-mm-dd",
+      onSelect: function(selectedDate) {//选择日期后执行的操作 
+    	 end_date=selectedDate;
+    	 end_dateObj=new Date(end_date).getTime();
+    	 } 
+    });
+ });
+//获取数据
+var totalday=0,startday=0;
+function getData() {
+	totalday = Math.abs((start_dateObj - end_dateObj))/(1000*60*60*24);
+	startday = Math.abs((start_dateObj - new Date("2016-07-01").getTime()))/(1000*60*60*24);
+	//位置ID
+	var select_id=document.getElementById("select_id").value;
+	$.ajax({
+		type : 'post',
+		url : 'GetPressChartData.jsp',
+		data : {start:startday*2880,total:totalday*2880,id:select_id,flag:"id"},
+		dataType : 'json',
+		beforeSend: function () {
+            var target = document.getElementById("spinner");
+            spinner.spin(target);                    
+        },
+        success : function(data) {
+        	for (var i = 0; i < data.length; i++) {
+				value1_Array[i] = data[i].value_1;
+				value2_Array[i] = data[i].value_2;
+				value3_Array[i] = data[i].value_3;
+				value4_Array[i] = data[i].value_4;
+				date_Array[i] = data[i].date;
+			}
+        	spinner.spin();
+        	load1();
+        	load2();
+        	console.log(data.length);
+		}
+	});
+}
+function getDataByAddress() {
+	var startStr=start_date+" 00:00:00";
+	var endStr=end_date+" 23:59:30";
+	//区域
+	var select_address=document.getElementById("select_address").value;
+	console.log(select_address);
+	$.ajax({
+		type : 'post',
+		url : 'GetPressChartData.jsp',
+		data : {startdate:startStr,enddate:endStr,select_address:select_address,flag:"address"},
+		dataType : 'json',
+		beforeSend: function () {
+            var target = document.getElementById("spinner");
+            spinner.spin(target);                    
+        },
+        success : function(data) {
+        	for (var i = 0; i < data.length; i++) {
+				value_Array[i] = data[i].value;
+				date_Array[i] = data[i].date;
+			}
+        	spinner.spin();
+        	load();
+        	console.log(data.length);
+		}
+	});
+}
+//加载图像
+function load1(){
+	
+	$(document).ready(function() { 
+		var id=20;
+		   var chart = {
+		      type: 'spline',
+			  animation: Highcharts.svg, // don't animate in IE < IE 10.
+		      marginRight: 10,
+			  events: {
+		         load: function () {
+		            // set up the updating of the chart each second
+		            var series1 = this.series[0];
+		            var series2 = this.series[1];
+		            if(id<date_Array.length){
+		            	setInterval(function () {
+			            	 var x = new Date(date_Array[id]).getTime(), 
+			                 y1 = value1_Array[id];
+			            	 y2 = value2_Array[id];
+			                 series1.addPoint([x, y1], true, true);
+			                 series2.addPoint([x, y2], true, true);
+			                 id++;
+			            }, 1000);
+		            }
+		         }
+		      }
+		   };
+		   var title = {
+		      text: '压力数据'   
+		   };   
+		   var xAxis = {
+		      type: 'datetime',
+		      tickPixelInterval: 150
+		   };
+		   var yAxis = {
+		      title: {
+		         text: ''
+		      },
+		      plotLines: [{
+		         value: 0,
+		         width: 1,
+		         color: '#808080'
+		      }]
+		   };
+		   var tooltip = {
+		      formatter: function () {
+		      return '<b>' + this.series.name + '</b><br/>' +
+		         Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+		         Highcharts.numberFormat(this.y, 2);
+		      }
+		   };
+		   var plotOptions = {
+		      area: {
+		         pointStart: 1940,
+		         marker: {
+		            enabled: false,
+		            symbol: 'circle',
+		            radius: 2,
+		            states: {
+		               hover: {
+		                 enabled: true
+		               }
+		            }
+		         }
+		      }
+		   };
+		   var legend = {
+		      enabled: false
+		   };
+		   var exporting = {
+		      enabled: false
+		   };
+		   var series= [{
+		      name: '压力1号点数据',
+		      data: (function () {
+		         // generate an array of random data
+		         var data = [],i;
+		         for (i = 0; i < 20; i ++) {
+		            data.push({
+		               x: new Date(date_Array[i]).getTime(),
+		               y: value1_Array[i]
+		            });
+		         }
+		         return data;
+		      }())    
+		   },
+		   {
+			      name: '压力2号点数据',
+			      data: (function () {
+			         // generate an array of random data
+			         var data = [],i;
+			         for (i = 0; i < 20; i ++) {
+			            data.push({
+			               x: new Date(date_Array[i]).getTime(),
+			               y: value2_Array[i]
+			            });
+			         }
+			         return data;
+			      }())    
+			   }
+			   ];     
+		      
+		   var json = {};   
+		   json.chart = chart; 
+		   json.title = title;     
+		   json.tooltip = tooltip;
+		   json.xAxis = xAxis;
+		   json.yAxis = yAxis; 
+		   json.legend = legend;  
+		   json.exporting = exporting;   
+		   json.series = series;
+		   json.plotOptions = plotOptions;
+		   
+		   
+		   Highcharts.setOptions({
+		      global: {
+		         useUTC: false
+		      }
+		   });
+		   $('#container1').highcharts(json);
+
+		});
+	$(document).ready(function() { 
+		var id=20;
+		   var chart = {      
+		      type: 'gauge',
+		      plotBorderWidth: 1,
+		      plotBackgroundColor: {
+		         linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+		         stops: [
+		            [0, '#FFF4C6'],
+		            [0.3, '#FFFFFF'],
+		            [1, '#FFF4C6']
+		         ]
+		      },
+		      plotBackgroundImage: null,
+		      height: 200
+		   };
+		   var credits = {
+		      enabled: false
+		   };
+
+		   var title = {
+		      text: '压力表'
+		   };
+
+		   var pane = [{
+		         startAngle: -45,
+		         endAngle: 45,
+		         background: null,
+		         center: ['25%', '145%'],
+		         size: 300
+		      }, {
+		         startAngle: -45,
+		         endAngle: 45,
+		         background: null,
+		         center: ['75%', '145%'],
+		         size: 300
+		   }];
+
+		   var yAxis = [{
+		         min: 20,
+		         max: 40,
+		         minorTickPosition: 'outside',
+		         tickPosition: 'outside',
+		         labels: {
+		            rotation: 'auto',
+		            distance: 20
+		         },
+		         plotBands: [{
+		            from: 35,
+		            to: 40,
+		            color: '#C02316',
+		            innerRadius: '100%',
+		            outerRadius: '105%'
+		         }],
+		         pane: 0,
+		         title: {
+		            text: '压力<br/><span style="font-size:8px">Channel 1</span>',
+		            y: -40
+		         }
+		      }, {
+		         min: 20,
+		         max: 40,
+		         minorTickPosition: 'outside',
+		         tickPosition: 'outside',
+		         labels: {
+		            rotation: 'auto',
+		            distance: 20
+		         },
+		         plotBands: [{
+		            from: 35,
+		            to:40,
+		            color: '#C02316',
+		            innerRadius: '100%',
+		            outerRadius: '105%'
+		         }],
+		         pane: 1,
+		         title: {
+		            text: '压力<br/><span style="font-size:8px">Channel 2</span>',
+		            y: -40
+		         }
+		   }];
+		   
+		   var plotOptions = {
+		      gauge: {
+		            dataLabels: {
+		            enabled: false
+		         },
+		         dial: {
+		            radius: '100%'
+		         }
+		      }
+		   };
+		   var series= [{
+		        data: [20],
+		        yAxis: 0
+		     }, {
+		        data: [20],
+		        yAxis: 1
+		   }];     
+		      
+		   var json = {};   
+		   json.chart = chart; 
+		   json.credits = credits;
+		   json.title = title;       
+		   json.pane = pane; 
+		   json.yAxis = yAxis; 
+		   json.plotOptions = plotOptions;  
+		   json.series = series;      
+		   
+		   // Add some life
+		   var chartFunction = function (chart) {
+		      setInterval(function () {
+		         if (chart.series) { // the chart may be destroyed
+		            var left = chart.series[0].points[0],
+		            right = chart.series[1].points[0],
+		            leftVal,
+		            rightVal,
+
+		            leftVal =  value1_Array[id];
+		            rightVal = value2_Array[id];
+		          
+		            id++;
+		            left.update(leftVal, false);
+		            right.update(rightVal, false);
+		            chart.redraw();
+		         }
+		      }, 1000);
+		   };
+		   
+		   $('#container-1').highcharts(json, chartFunction);  
+		});
+ }
+function load2(){
+	
+	$(document).ready(function() {  
+		var id=20;
+		   var chart = {
+		      type: 'spline',
+			  animation: Highcharts.svg, // don't animate in IE < IE 10.
+		      marginRight: 10,
+			  events: {
+		         load: function () {
+		            // set up the updating of the chart each second
+		            var series1 = this.series[0];
+		            var series2 = this.series[1];
+		            if(id<date_Array.length){
+		            	setInterval(function () {
+			            	 var x = new Date(date_Array[id]).getTime(), 
+			            	 y3 = value3_Array[id];
+			            	 y4 = value4_Array[id];
+			                 series1.addPoint([x, y3], true, true);
+			                 series2.addPoint([x, y4], true, true);
+			                 id++;
+			            }, 1000);
+		            }
+		         }
+		      }
+		   };
+		   var title = {
+		      text: '压力数据'   
+		   };   
+		   var xAxis = {
+		      type: 'datetime',
+		      tickPixelInterval: 150
+		   };
+		   var yAxis = {
+		      title: {
+		         text: ''
+		      },
+		      plotLines: [{
+		         value: 0,
+		         width: 1,
+		         color: '#808080'
+		      }]
+		   };
+		   var tooltip = {
+		      formatter: function () {
+		      return '<b>' + this.series.name + '</b><br/>' +
+		         Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+		         Highcharts.numberFormat(this.y, 2);
+		      }
+		   };
+		   var plotOptions = {
+		      area: {
+		         pointStart: 1940,
+		         marker: {
+		            enabled: false,
+		            symbol: 'circle',
+		            radius: 2,
+		            states: {
+		               hover: {
+		                 enabled: true
+		               }
+		            }
+		         }
+		      }
+		   };
+		   var legend = {
+		      enabled: false
+		   };
+		   var exporting = {
+		      enabled: false
+		   };
+		   var series= [
+			   {
+				      name: '压力3号点数据',
+				      data: (function () {
+				         // generate an array of random data
+				         var data = [],i;
+				         for (i = 0; i < 20; i ++) {
+				            data.push({
+				               x: new Date(date_Array[i]).getTime(),
+				               y: value3_Array[i]
+				            });
+				         }
+				         return data;
+				      }())    
+				   },
+				   {
+					      name: '压力4号点数据',
+					      data: (function () {
+					         // generate an array of random data
+					         var data = [],i;
+					         for (i = 0; i < 20; i ++) {
+					            data.push({
+					               x: new Date(date_Array[i]).getTime(),
+					               y: value4_Array[i]
+					            });
+					         }
+					         return data;
+					      }())    
+					   }];     
+		      
+		   var json = {};   
+		   json.chart = chart; 
+		   json.title = title;     
+		   json.tooltip = tooltip;
+		   json.xAxis = xAxis;
+		   json.yAxis = yAxis; 
+		   json.legend = legend;  
+		   json.exporting = exporting;   
+		   json.series = series;
+		   json.plotOptions = plotOptions;
+		   
+		   
+		   Highcharts.setOptions({
+		      global: {
+		         useUTC: false
+		      }
+		   });
+		   $('#container2').highcharts(json);
+
+		});
+	$(document).ready(function() {
+		var id=20;
+		   var chart = {      
+		      type: 'gauge',
+		      plotBorderWidth: 1,
+		      plotBackgroundColor: {
+		         linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+		         stops: [
+		            [0, '#FFF4C6'],
+		            [0.3, '#FFFFFF'],
+		            [1, '#FFF4C6']
+		         ]
+		      },
+		      plotBackgroundImage: null,
+		      height: 200
+		   };
+		   var credits = {
+		      enabled: false
+		   };
+
+		   var title = {
+		      text: '压力表'
+		   };
+
+		   var pane = [{
+		         startAngle: -45,
+		         endAngle: 45,
+		         background: null,
+		         center: ['25%', '145%'],
+		         size: 300
+		      }, {
+		         startAngle: -45,
+		         endAngle: 45,
+		         background: null,
+		         center: ['75%', '145%'],
+		         size: 300
+		   }];
+
+		   var yAxis = [{
+		         min: 20,
+		         max: 40,
+		         minorTickPosition: 'outside',
+		         tickPosition: 'outside',
+		         labels: {
+		            rotation: 'auto',
+		            distance: 20
+		         },
+		         plotBands: [{
+		            from: 35,
+		            to: 40,
+		            color: '#C02316',
+		            innerRadius: '100%',
+		            outerRadius: '105%'
+		         }],
+		         pane: 0,
+		         title: {
+		            text: '压力<br/><span style="font-size:8px">Channel 3</span>',
+		            y: -40
+		         }
+		      }, {
+		         min: 20,
+		         max: 40,
+		         minorTickPosition: 'outside',
+		         tickPosition: 'outside',
+		         labels: {
+		            rotation: 'auto',
+		            distance: 20
+		         },
+		         plotBands: [{
+		            from: 35,
+		            to: 40,
+		            color: '#C02316',
+		            innerRadius: '100%',
+		            outerRadius: '105%'
+		         }],
+		         pane: 1,
+		         title: {
+		            text: '压力<br/><span style="font-size:8px">Channel 4</span>',
+		            y: -40
+		         }
+		   }];
+		   
+		   var plotOptions = {
+		      gauge: {
+		            dataLabels: {
+		            enabled: false
+		         },
+		         dial: {
+		            radius: '100%'
+		         }
+		      }
+		   };
+		   var series= [{
+		        data: [20],
+		        yAxis: 0
+		     }, {
+		        data: [20],
+		        yAxis: 1
+		   }];     
+		      
+		   var json = {};   
+		   json.chart = chart; 
+		   json.credits = credits;
+		   json.title = title;       
+		   json.pane = pane; 
+		   json.yAxis = yAxis; 
+		   json.plotOptions = plotOptions;  
+		   json.series = series;      
+		   
+		   // Add some life
+		   var chartFunction = function (chart) {
+		      setInterval(function () {
+		         if (chart.series) { // the chart may be destroyed
+		            var left = chart.series[0].points[0],
+		            right = chart.series[1].points[0],
+		            leftVal,
+		            rightVal,
+		            
+		            leftVal =  value3_Array[id];
+		            rightVal = value4_Array[id];
+		            id++;
+		            left.update(leftVal, false);
+		            right.update(rightVal, false);
+		            chart.redraw();
+		         }
+		      }, 1000);
+		   };
+		   
+		   $('#container-2').highcharts(json, chartFunction);  
+		});
+ }
+
+	
+</script>
+</body>
+</html>

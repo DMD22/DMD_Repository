@@ -1,0 +1,227 @@
+﻿function updateDataTable(){
+	var tableName = '';
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+		id:'-1',
+		text:'数据表',
+		expanded:true,
+		leaf:false
+	})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+		dataUrl:'/CoalMine/servlet/DataTableServlet',
+		baseParams:{
+			action:'getDataTableLeftTree'
+		}
+	})
+	var leftTreePanel = new Ext.tree.TreePanel({
+		root:leftTreeRoot,
+		loader:leftTreeLoad,
+		region:'west',
+		autoScroll:true,
+		layout:'fit',
+		title:'数据表元数据维护',
+		id:'TreePanel_id',
+	    split : true,
+		width : 240,
+		minSize : 175,
+		maxSize : 400,
+		collapsible : true
+	})
+	leftTreePanel.on('click',function(node){
+		if(node.isLeaf()){
+			dbId = node.parentNode.id.substring(9,node.parentNode.id.length);
+			Ext.Ajax.request({
+				url : '/CoalMine/servlet/DataTableServlet',
+			    params : {
+				   action : 'getDataTableInfo',
+				   dbId:dbId,
+				   tableId:node.id.split("_")[2]
+			    },
+			    success : function(response, request) {
+			    	var res = Ext.util.JSON.decode(response.responseText);
+			    	if(res.success==true){
+			    		tableName = res.tableName;
+			    		txt_TableName.setValue(res.tableName);
+		                txt_TableChinaName.setValue(res.tableChinaName);
+		                txt_TableNameForOther.setValue(res.tableForOthers);
+		                comb_dataBase.setValue(node.parentNode.id.substring(9,node.parentNode.id.length));
+		                txt_keyword.setValue(res.keywords);
+		                txt_TableDescription.setValue(res.description);
+		                if(res.isopen==true){
+		                	Ext.getCmp("id_open").setValue(true);
+		                	Ext.getCmp("id_noopen").setValue(false);
+		                }else{
+		                	Ext.getCmp("id_open").setValue(false);
+		                	Ext.getCmp("id_noopen").setValue(true);
+		                }
+			    	}
+			    }
+			})
+		}
+	})
+	var store_words = new Ext.data.SimpleStore({
+		fields:['id','txt'],
+		data:[[1,'oracle数据库驱动'],[2,'sql数据库驱动'],[3,'mysql数据库驱动'],[4,'db2数据库驱动']]
+	})
+	var txt_TableName = new Ext.form.TextField({
+		fieldLabel:'数据表名',
+		anchor:'80%',
+		allowBlank : false
+	});
+	var txt_TableChinaName = new Ext.form.TextField({
+		fieldLabel:'数据表中文名',
+		anchor:'80%',
+		allowBlank : false
+	});
+	var txt_TableNameForOther = new Ext.form.TextField({
+		fieldLabel:'对外显示名',
+		anchor:'80%',
+		allowBlank : false
+	});
+	var ds_dataBaseList = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root : 'rows'}, [{name : "id"}, {name : "text"}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataBaseServlet'
+		}),
+		baseParams : {
+			action : 'getDataBaseList'
+		}
+	})
+	ds_dataBaseList.load();
+	var comb_dataBase = new Ext.form.ComboBox({
+		fieldLabel:'所在数据库名',
+		anchor:'80%',
+		store:ds_dataBaseList,
+		readOnly:true,
+		valueField:'id',
+		displayField:'text',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	var txt_keyword = new Ext.form.TextField({
+		fieldLabel:'关键词',
+		anchor:'80%'
+	});
+	var txt_TableDescription = new Ext.form.TextArea({
+		fieldLabel:'数据表描述',
+		anchor:'80%'
+	});
+	var fs_description = new Ext.form.FieldSet({
+		layout:'form',
+		border:false,
+		frame:false,
+	    fitToFrame:true,
+		items:[{ 
+            xtype:'panel', 
+            layout:'column', 
+            border:false, 
+            frame:false,
+	        fitToFrame:true,
+            fieldLabel:'是否开放', 
+            defaults:{ 
+                layout:'form', 
+                border:false, 
+                frame:false,
+	            fitToFrame:true,
+                columnWidth:.2 
+            }, 
+            items:[{ 
+                labelSeparator:'：', 
+                items:{ 
+                   xtype:'radio', 
+                   checked:'true',
+                   id:'id_open',
+                   name:'isopen', 
+                   boxLabel:'是' 
+                } 
+            },{ 
+               items:{ 
+               xtype:'radio', 
+               name:'isopen', 
+               id:'id_noopen',
+               hideLabel:true, 
+               boxLabel:'否' 
+               } 
+            }] 
+      }] 
+	})
+	var fs_basicInfo = new Ext.form.FieldSet({
+		autoHeight : true,
+	    autoWidth : true,//[10.14]不会出现宽度太小，控件消失的问题
+	    frame:false,
+	    fitToFrame:true,
+	    split:true,
+	    bodyStyle: 'position:relative',
+	    style:'padding:10px 10px 10px 10px',
+	    width:'95%',
+	    layout : 'form',
+	    border:false,
+		items:[txt_TableName,txt_TableChinaName,
+		txt_TableNameForOther,comb_dataBase,txt_keyword,
+		txt_TableDescription,fs_description]
+	})
+	var rightPanel = new Ext.form.FormPanel({
+		region:'center',
+		layout:'form',
+		buttonAlign:'center',
+		items:[txt_TableName,txt_TableChinaName,
+		txt_TableNameForOther,comb_dataBase,txt_keyword,
+		txt_TableDescription,fs_description],
+		buttons:[{
+			text:'保存',
+			handler:function(){
+				if(txt_TableName.isValid()&&txt_TableChinaName.isValid()&&txt_TableNameForOther.isValid()&&comb_dataBase.isValid()){
+					var isopen = false;
+				if(Ext.getCmp("id_open").checked == true)
+				    isopen = true;
+				var TableName = txt_TableName.getValue();
+				var tableChinaName = txt_TableChinaName.getValue();
+				var tableNameForOther = txt_TableNameForOther.getValue();
+				var dbId = comb_dataBase.getValue();
+				var keyword = txt_keyword.getValue();
+				var description = txt_TableDescription.getValue();
+				Ext.Ajax.request({
+					url:'/CoalMine/servlet/DataTableServlet',
+				    method:'POST',
+				    params:{
+					    action:'updateDataTable',
+					    tableName:TableName,
+					    defaultTableName:tableName,
+					    tableChinaName:tableChinaName,
+					    tableNameForOther:tableNameForOther,
+					    dbId:dbId,
+					    keyword:keyword,
+					    description:description,
+					    isopen:isopen
+				    },
+				   success:function(response, request){
+					   res = Ext.util.JSON.decode(response.responseText);
+					   if (res.success == true) {
+							Ext.Msg.show({
+								title : '提示',
+								msg : '修改成功!',
+								buttons : Ext.Msg.OK
+							});
+							leftTreeRoot.reload();
+						} else
+							Ext.Msg.show({
+								title : '提示',
+								msg : '修改失败!',
+								buttons : Ext.Msg.OK
+							})
+					  leftTreeRoot.reload();
+				   }
+				})
+				}
+			}
+		},{
+			text:'重置'
+		}]
+	})
+	var vp = new Ext.Viewport({
+		id:'ViewPort_Id',
+		layout:'border',
+		items:[leftTreePanel,rightPanel]
+	})
+}
+Ext.onReady(updateDataTable);

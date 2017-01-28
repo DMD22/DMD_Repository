@@ -1,0 +1,765 @@
+
+// 事件列表
+    var caseList = new Ext.data.Store({
+        reader: new Ext.data.JsonReader(
+            {root: 'rows', totalProperty: 'resultCount'},
+            [{name: "id", mapping: 'CaseID'}
+             ,{name: "caseName"}
+             ,{name: "occureTime", mapping: 'occuranceTime'}
+             ,{name: "location", mapping: 'occurancePlace'}
+             ,{name: "reportTime"}
+//             ,{name: "reportDepartment", mapping: 'reporterDepartment'}
+             ,{name: "reporter", mapping: 'personName'}
+             ,{name: "caseDescription"}            
+             ,{name: "caseState"}
+             ,{name:"eventTypeID"}//
+        	 ,{name:"eventLevelID"}
+        	 ,{name:"eventTypeName"}
+        	 ,{name:"eventLevelName"}        	
+             ,{name: "caseInjured"}
+             ,{name: "caseType"}
+            ]
+        )
+        ,proxy: new Ext.data.HttpProxy({ 
+        	url:'/CoalMine/servlet/DataAnalysisServlet'
+        }),
+        baseParams:{
+        	action:'getCasesOnCondition'
+        }
+    });
+
+function Statistic(){
+
+	Ext.BLANK_IMAGE_URL = '../img/s.gif';						 
+	Ext.QuickTips.init();
+	Ext.form.Field.prototype.msgTarget = 'side';
+	Ext.override(Ext.layout.FormLayout, {   
+                getAnchorViewSize:function(ct, target) {   
+                    return (ct.body || ct.el).getStyleSize();   
+                }   
+    }); 
+	var cc=Ext.apply({item:[]},{sdf:'sd'});
+	//ie8下extjs2 会变形,新版的extjs3.0修正了这个bug
+	Ext.override(Ext.menu.DateMenu, {
+			 autoWidth: function() {
+				  var el = this.el, ul = this.ul;
+				  if (!el) {
+					  return;
+				  }
+				  var w = this.width;
+				  if (w) {
+					  el.setWidth(w);
+				  } 
+				  else{
+					  if (Ext.isIE && !Ext.isIE6) {
+						  el.setWidth(this.minWidth);
+						  var t = el.dom.offsetWidth;
+						  el.setWidth(ul.getWidth() + el.getFrameWidth("lr"));
+					  }
+				  }
+			 }
+	});
+	Ext.state.Manager.setProvider(new Ext.state.CookieProvider());//用cookie记录这个界面的expand、collapse情况
+	// disable stateful for all base Component
+	Ext.override(Ext.Component, {
+    	stateful: false
+	});
+// enable stateful for Ext.grid.GridPanel
+	Ext.override(Ext.Panel, {
+    	stateful: true
+	});
+	//获得各类形式的id
+	var TAB_PREFIX = 'AWS_CC_CP_TAB_';
+	var getTabId = function(id){
+		return TAB_PREFIX + id;
+	}
+	var TAB_FRM_PREFIX = 'AWS_CC_CP_TAB_FRM_';
+	var  getFrmId = function(id){
+		return TAB_FRM_PREFIX + id;
+	}
+	var getFrmIdByTab = function(tabId){
+		return TAB_FRM_PREFIX + tabId.substring(TAB_PREFIX.length);
+	}
+	
+	//生成页面左侧树
+	var root = new Ext.tree.TreeNode({
+    	id:'statisticsAndreport',
+    	text:'统计和报表',
+    	leaf:false
+    });
+    
+    var statistic = new Ext.tree.TreeNode({
+    	id:'statistic',
+    	text:'事故数据统计',
+    	leaf:false
+    });
+    var injuredStatistic = new Ext.tree.TreeNode({
+    	id:'injuredStatistic',
+    	text:'伤亡人员数据统计',
+    	leaf:false
+    });
+    
+    var report = new Ext.tree.TreeNode({
+    	id:'report',
+    	text:'事故报表生成',
+    	leaf:false
+    });
+//数据统计   树各个节点  
+     var departmentSta = new Ext.tree.TreeNode({
+    	id:'departmentSta',
+    	text:'按照科室名称',
+    	leaf:true,	
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'name';
+    	    	createGrid(node.id, storeList,departmentlist,0,"按照科室名称");    	    	
+    	    }
+    	}// listeners
+    });
+    
+    var dangerSta = new Ext.tree.TreeNode({
+    	id:'dangerSta',
+    	text:'按照危险源',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'name';
+    	    	createGrid(node.id, storeList,dangersoureclist,0,"按照危险源");    	    	
+    	    }
+    	}// listeners
+    });
+    
+    var caselevelSta = new Ext.tree.TreeNode({
+    	id:'caselevelSta',
+    	text:'按照事件级别',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'caseLevel';
+    	    	createGrid(node.id, storeList,caseLevel,0,"按照事件级别");
+    	    }
+    	}
+    });
+    
+     var casetypeSta = new Ext.tree.TreeNode({
+    	id:'casetypeSta',
+    	text:'按照事件类别',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'TypeName';
+    	    	createGrid(node.id, storeList,eventTypeList,0,"按照事件类别");
+    	    }
+    	}
+    });
+    
+//    var deathcaseSta = new Ext.tree.TreeNode({
+//    	id:'deathcaseSta',
+//    	text:'死亡事故',
+//    	leaf:false
+//    });
+    var injuredDegreeSta = new Ext.tree.TreeNode({
+    	id:'injuredDegreeSta',
+    	text:'按照伤重程度分析',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'injuredDegree';
+    	    	createGrid(node.id, storeList,injuredDegreeStore,0,"按照年龄段");
+    	    }
+    	}
+    });
+    var injuredjobSta = new Ext.tree.TreeNode({
+    	id:'injuredjobSta',
+    	text:'按照工种分析',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'caseJob';
+    	    	createGrid(node.id, storeList,deathcaseJob,0,"按照工种");
+    	    }
+    	}
+    });
+    
+    var injureddetailtypeSta = new Ext.tree.TreeNode({
+    	id:'injureddetailtypeSta',
+    	text:'按照具体类别分析',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'deathcaseType';
+    	    	createGrid(node.id, storeList,deathcaseType,0,"按照具体类别");
+    	    }
+    	}
+    });
+    
+    var injuredageSta = new Ext.tree.TreeNode({
+    	id:'injuredageSta',
+    	text:'按照年龄段分析',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'ageScale';
+    	    	createGrid(node.id, storeList,injuredAgeScale,0,"按照年龄段");
+    	    }
+    	}
+    });
+    
+    
+//    var injureddateSta = new Ext.tree.TreeNode({                //伤亡人员按时间统计
+//    	id:'injureddateSta',
+//    	text:'按照时间段分析',
+//    	leaf:false
+//    });
+    
+    var dayTimeSta = new Ext.tree.AsyncTreeNode({                //早中晚班记录
+    	id:'dayTimeSta',
+    	text:'按照班次分析',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'workTime';
+    	    	createGrid(node.id, storeList,injuredWorkTime,0,"按照班次");
+    	    }
+    	}
+    });
+    var monthTypeSta = new Ext.tree.AsyncTreeNode({                //上中下旬
+    	id:'monthTypeSta',
+    	text:'按照月旬分析',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'monthTime';
+    	    	createGrid(node.id, storeList,injuredMonthTime,0,"按照月旬");
+    	    }
+    	}
+    });
+    var isHolidaySta = new Ext.tree.AsyncTreeNode({                //是否节假日
+    	id:'isHolidaySta',
+    	text:'按照是否节假日分析',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'isHolidayTime';
+    	    	createGrid(node.id, storeList,isHolidayTime,0,"按照是否节假日");
+    	    }
+    	}
+    });
+    
+    var occurtimeSta = new Ext.tree.AsyncTreeNode({
+    	id:'occurtimeSta',
+    	text:'按照时间段分析',
+    	leaf:true
+    });
+
+//报表生成	树 各个节点
+    
+    var caselevelRep = new Ext.tree.AsyncTreeNode({
+    	id:'caselevelRep',
+    	text:'按照事件级别',
+    	leaf:true
+    	,listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'caseLevel';
+    	    	createGrid(node.id, storeList,caseLevel,1,"按照事件级别");
+    	    }//click Funcion
+    	}// listeners
+    });
+    
+    var occurtimeRep = new Ext.tree.AsyncTreeNode({
+    	id:'occurtimeRep',
+    	text:'按照事发时间',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = '';
+    	    	createGrid(node.id, storeList,null,1,"按照事发时间");    	    	
+    	    }
+    	}// listeners
+    });
+    
+    var occurplaceRep = new Ext.tree.AsyncTreeNode({
+    	id:'occurplaceRep',
+    	text:'按照事发地点',
+    	leaf:true    	
+    });
+    
+    var casedepartmentRep = new Ext.tree.AsyncTreeNode({
+    	id:'casedepartmentRep',
+    	text:'按照科室名称',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'name';
+    	    	createGrid(node.id, storeList,departmentlist,1,"按照科室");    	    	
+    	    }
+    	}// listeners
+    });
+    
+    var casestateRep = new Ext.tree.AsyncTreeNode({
+    	id:'casestateRep',
+    	text:'按照事件状态',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'caseState';
+    	    	createGrid(node.id, storeList,caseState,1,"按照事件状态");    	    	
+    	    }
+    	}// listeners
+    });
+    var caseTypeRep = new Ext.tree.AsyncTreeNode({
+    	id:'caseTypeRep',
+    	text:'按照事件类型',
+    	leaf:true,
+    	listeners:{
+    	    'click': function(node, event){
+    	    	var storeList = 'TypeName';
+    	    	createGrid(node.id, storeList,eventTypeList,1,"按照事件类型");    	    	
+    	    }
+    	}// listeners
+    });
+    
+    //伤亡人员数据统计的节点
+    injuredStatistic.appendChild(injuredDegreeSta);           
+    injuredStatistic.appendChild(injuredjobSta);
+    injuredStatistic.appendChild(injureddetailtypeSta);
+    injuredStatistic.appendChild(injuredageSta);
+    
+//    deathcaseSta.appendChild(injuredjobSta);
+//    deathcaseSta.appendChild(injureddetailtypeSta);
+//    deathcaseSta.appendChild(injuredageSta);
+    //deathcaseSta.appendChild(injureddateSta);             //按照时间段分析？？跳过
+          
+//    injureddateSta.appendChild(dayTimeSta);                  //伤亡人员按时间段分的扩展
+//    injureddateSta.appendChild(monthTypeSta);
+//    injureddateSta.appendChild(isHolidaySta);
+    
+//    casetypeSta.appendChild(deathcaseSta);
+       
+    statistic.appendChild(departmentSta);
+    statistic.appendChild(dangerSta);
+    statistic.appendChild(caselevelSta);
+//    statistic.appendChild(occurtimeSta);                  //按时间段分析？？没考虑    
+    statistic.appendChild(casetypeSta);
+    
+    report.appendChild(caselevelRep);
+//    report.appendChild(occurtimeRep);            //暂时跳过按事发时间的情况
+//    report.appendChild(occurplaceRep);           //暂时跳过按事发地点的情况
+    report.appendChild(casedepartmentRep);
+    report.appendChild(casestateRep);
+    report.appendChild(caseTypeRep);
+    
+    
+    root.appendChild(statistic);
+    root.appendChild(injuredStatistic);
+    root.appendChild(report);
+    
+    var StatisticsTree=new Ext.tree.TreePanel({     //树StatisticsTree
+       animate:true,//以动画形式伸展,收缩子节点
+       collapsible:true,
+//       collapsed:true,
+       rootVisible:true,//是否显示根节点
+       autoScroll:true,
+       height:'95%',
+       lines:true,//节点之间连接的横竖线
+       root:root
+    });
+    var record_start = 0;
+    function createGrid(textString, storeList, type, operationType, text){  
+    	//这里type表示的是哪个节点对应的store,operationType代表统计还是报表，0表示统计，1表示报表,text表示传过来的树节点的text
+        
+    var sm = new Ext.grid.CheckboxSelectionModel({singleSelect:false});
+    var Tab=new Ext.TabPanel({
+		id: 'sub' + textString ,
+	    region:'center',   
+        enableTabScroll:true,   
+        activeTab:0,   
+        items:[{   
+            xtype:'panel',
+		    title:'介绍页',
+		    html:'<br><br><font size="+1" color="#000000"><h1>请选择左面的数据源名称点击上方按钮生成统计图（多选）</h1></font><br><hr />'
+        }]
+    });
+    Tab.on('beforeremove', function(cmp){
+		//释放iframe占用的内存
+		var iFrame = cmp.getEl().dom;
+		if(iFrame.src) {
+			iFrame.src = 'javascript:false';
+			iFrame.parentNode.removeChild(iFrame);    
+	        iFrame = null;
+	        CollectGarbage();
+		}
+	});
+    if(1 == operationType){
+    var toolbar = new Ext.Toolbar([{
+	        id : "tab_test",
+			text : "确定",
+			iconCls: 'surebutton',
+			disabled:true,
+			handler :function(){
+			    var rows=Grid.getSelectionModel().getSelections()//得到选择项
+			    if(rows.length==0){
+					Ext.Msg.alert('信息','请先选择您要统计的数据');
+				}
+				else{
+				    var data = '';
+					for(var i=0;i<rows.length;i++){
+						data += rows[i].get(storeList)+';';
+					}//for
+//					alert(data);
+					var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0];
+					  }
+					var title = titleDifferent + '生成报表';
+					
+					var index = Tab.items.length +1;
+//					addTabPage(textString,data,title);
+					var subToolbar = new Ext.Toolbar([{
+					    id: 'subToolbar',
+					    iconCls: 'surebutton',
+					    text : '导出文档',
+					    handler: function(){
+					        Ext.Ajax.request({
+					            url : '/CoalMine/servlet/DownloadServlet',
+				                method : 'POST',
+				                params : {
+					                action : 'tableDownload',
+					                data: data,
+				                    condition: textString,
+				                    title: title
+				                },
+				                success : function(response) {
+				                	var resp = Ext.util.JSON.decode(response.responseText);
+//					                window.open(resp.user);
+				                	setTimeout("window.open('../documents/excel/" + resp.user
+											+ "','Download')", 50);
+//									var fso,f1;     
+//                                    fso = new ActiveXObject( "Scripting.FileSystemObject ");   
+//                                    f1 = fso.GetFile( "../documents/excel/ "+resp.user);           
+//                                    f1.Delete(); 
+				                },
+				                failure : function(response) {
+					                Ext.Msg.alert('警告：', '操作失败，请稍后再试...');
+				                }
+					        });
+					    }
+					}])
+					var caseGrid = new Ext.grid.GridPanel({
+    	                height: 800,
+	                    title: title,
+	                    tbar: subToolbar ,
+	                    autoScroll: true,
+	                    collapsible: true,
+	                    loadMask: true,
+	                    viewConfig:{
+	        	            forceFit: true
+	        	            ,emptyText: '没有匹配的记录！'
+	                    }
+//	                    ,sm:sm
+	                    ,store: caseList
+	                    ,columns:[
+	                        new Ext.grid.RowNumberer({
+	                            renderer:function(value,metadata,record,rowIndex){
+	                	            return record_start + 1 + rowIndex;
+	                            }
+	                        })
+//	                    ,sm
+	                    ,{header: '事件名称', dataIndex: 'caseName', sortable: true}
+	                    ,{header: '事发时间', dataIndex:'occureTime', sortable:true}
+                        ,{header: '事发地点', dataIndex:'location', sortable:true}               
+                        ,{header: '上报时间', dataIndex:'reportTime', sortable:true}
+//                      ,{header: '上报科室', dataIndex:'reportDepartment', sortable:true}
+                        ,{header: '报告人', dataIndex:'reporter', sortable:true}
+                        ,{header: '事件状态', dataIndex:'caseState', sortable:true}
+//                         	,renderer:colorTip}//[5.13]colorTip
+                        ,{header: '事件级别', dataIndex:'eventLevelName', sortable:true}
+//                	        ,renderer:colorTip}
+                        ,{header: '事件类型', dataIndex:'eventTypeName', sortable:true}
+                        ,{header: '伤亡人数', dataIndex:'caseInjured', sortable:true}
+                        ,{header: '事件描述', dataIndex:'caseDescription', width: 100,sortable:true}
+                        ,{header: '所属', dataIndex:'caseType',width: 100, sortable:true}
+	                   ]	      
+    	            });
+    	            var activePanel = CenterTab.getItem(textString);  //获得当前活动面板
+					 var subTab = activePanel.findById('sub' + textString); //获取该面板上的TabPanel
+					 var subsubTab = subTab.getItem(title); //// 判断是否有将要添加的标签
+					 if(subsubTab == null){ //若没有，添加
+					    var tabPageNew = Tab.add({
+	                        title: title,
+	                        closable:true,
+	                        items:[caseGrid]
+	                       ,autoShow: true
+	                    });
+	                    Tab.setActiveTab(tabPageNew);
+					 }//if
+					 else{
+	                    Tab.setActiveTab(subsubTab);
+					 }
+//					Grid.render();
+					ProcessStatistics.render();
+					caseList.load({
+	                    params:{
+				            data: data,
+				            condition: textString
+		                }
+	                });
+//	                addTabPage(textString,data,title);
+//					var splits = data.split(';');
+				}
+			}//handler	
+	      }
+    ]); 
+    }else if(0 == operationType){
+        var toolbar = new Ext.Toolbar([
+             {id:'tab_cylindricality',
+			  iconCls:'statistics',
+			  disabled:true,
+			  text:'柱形图',
+			  handler:function(){
+//				  var dataType = CenterTab.getActiveTab().id;
+				  var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+				  if(rows.length==0){
+					  Ext.Msg.alert('信息','请先选择您要统计的数据');
+				  }
+				  else{
+					  var data = '';
+					  for(var i=0;i<rows.length;i++){
+						  data += rows[i].get(storeList)+';';
+					  }//for
+					  //alert(data);
+					  var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0];
+					  }
+					  var title = titleDifferent + '按数据总量形成的柱形图';
+					  
+					  var newTextString = encodeURI(textString);//对要传的值编码，要不中文乱码
+					  var newData = encodeURI(data);
+					  
+					  var activePanel = CenterTab.getItem(textString);  //获得当前活动面板
+					  var subTab = activePanel.findById('sub' + textString); //获取该面板上的TabPanel
+					  var subsubTab = subTab.getItem(data); //// 判断是否有将要添加的标签
+					  if(subsubTab == null){ //若没有，添加
+					  var tabPage = Tab.add({
+	                      id: data,
+		                  title: title,
+			              closable: true,
+			              autoScroll: true,
+			              html: "<iframe src='../page/StatisticsBar.html?"+newTextString+'&'+newData+"' frameborder=0 width=100% height=100%></iframe>"
+	                   });	
+	                   Tab.setActiveTab(tabPage);
+					  }else{
+					      subTab.setActiveTab(subsubTab);
+					  }
+				  }
+			    }//handler
+			  },
+			  {
+				id : "tab_pie",
+				iconCls : "pie",
+				text : "饼形图",
+				disabled:true,
+				handler :function(){
+				var rows=Grid.getSelectionModel().getSelections()//得到选择所有行
+				  if(rows.length==0){
+					  Ext.Msg.alert('信息','请先选择您要统计的数据');
+				  }
+				  else{
+					  var data = '';
+					  for(var i=0;i<rows.length;i++){
+						  data += rows[i].get(storeList)+';';
+					  }//for
+					  //alert(data);
+					  var splits = data.split(';');
+					  if(splits.length > 3){
+						  titleDifferent = splits[0]+'，'+splits[1]+'等';
+					  } 
+					  if(splits.length ==3){
+						  titleDifferent = splits[0]+'，'+splits[1];
+					  } 
+					  if(splits.length == 2){
+						  titleDifferent = splits[0];
+					  }
+					  var title = titleDifferent + '按数据总量形成的饼形图';
+					  
+					  var newTextString = encodeURI(textString);//对要传的值编码，要不中文乱码
+					  var newData = encodeURI(data);
+					  
+					  var activePanel = CenterTab.getItem(textString);  //获得当前活动面板
+					  var subTab = activePanel.findById('sub' + textString); //获取该面板上的TabPanel
+					  var subsubTab = subTab.getItem(data); //// 判断是否有将要添加的标签
+					  if(subsubTab == null){ //若没有，添加
+					  var tabPage = Tab.add({
+	                      id: data,
+		                  title: title,
+			              closable: true,
+			              autoScroll: true,
+			              html: "<iframe src='../page/StatisticsPie.html?"+newTextString+'&'+newData+"' frameborder=0 width=100% height=100%></iframe>"
+	                   });	
+	                   Tab.setActiveTab(tabPage);
+					  }else{
+					      subTab.setActiveTab(subsubTab);
+					  }
+				  }
+				}
+				}
+    ]);
+    }
+    var Grid = new Ext.grid.GridPanel({
+    	title:"",
+	    store:type,
+	    sm:sm,
+	    cm: new Ext.grid.ColumnModel([
+		        new Ext.grid.RowNumberer(),
+				sm, 
+	            {header:'',width:200,sortable:true,dataIndex: storeList}
+	        ]),
+		frame:true,
+		autoWidth:true,
+		anchor:'100%',
+		fitToFrame:true,
+		viewConfig : {forceFit : true }, 
+		autoScroll:true,
+	    collapsible: true,
+	    height:'100%',
+		tbar:toolbar
+    });   
+    var WestPanel=new Ext.Panel({
+		frame:true,
+		plain:true,
+		labelWidth:80,
+		bodyStyle:'position:relative',
+		autoScroll:true,
+		layout:'fit',
+		items:[Grid]									
+    });
+	var Panel=new Ext.Panel({
+		id: textString,
+		title: text,
+		closable: true,
+	        layout:'border',
+	        items:[{
+	            region:'west',
+	            split:true,
+				title:'统计数据',
+	            width:'30%',
+	            minSize:80,
+	            maxSize:200,
+	            collapsible: true,
+	            margins:'0 0 0 0',
+	            layout:'fit',
+				defaults: {
+					autoScroll: true
+				},
+	            items:[WestPanel]
+			},
+			{
+	            region:'center',
+				layout:'fit',
+				split:true,
+				defaults: {
+					autoScroll: true
+				},
+	            items:[Tab]
+			}]
+	});
+	    //按钮控制
+	    sm.on('selectionchange',function(sm){
+		    if(sm.hasSelection())
+			    Grid.getTopToolbar().enable();
+			else 
+			    Grid.getTopToolbar().disable();
+	    });
+	
+	
+//	    sm.on('rowselect',function(sm,rowIndex,record){
+//    	    var _id = record.get('id');
+//    	    if(false == Ext.isEmpty(_id))
+//    		    rewindSelections.push(_id);
+//        });
+//    
+//        sm.on('rowdeselect',function(sm,rowIndex,record){
+//    	    var _id = record.get('id');
+//    	    if(false == Ext.isEmpty(_id)){
+//    		    var _idx = rewindSelections.indexOf(record.get('id'));
+//    		    if(_idx > -1)
+//    			    rewindSelections.splice(_idx,1);
+//    	    }
+//    	    if(rewindSelections.length == 0)
+//    		    grid_cases_duty.getTopToolbar().disable();
+//    		    Ext.getCmp('recieve_dutycase_bt').enable();
+//        });
+	//判断panel是否打开
+	var tab = CenterTab.getItem(textString);
+	if(tab == null){
+		CenterTab.add(Panel).show();
+	}
+	else{
+		CenterTab.setActiveTab(tab);
+	}
+		 
+    } //function createGrid
+			
+	
+	var CenterTab=new Ext.TabPanel({
+		activeTab:0,
+        //width:100,
+		tabPosition:'top',
+		defaults:{autoScroll: true},
+		plain:true,
+		
+        items:[{
+			   xtype:'panel',
+			   title:'欢迎页',
+			   html:'<br><font size="+2" color="#336699"><h1>欢迎进入安全事故应急救援联动管理软件平台</h1></font><br><hr />'
+			   }]
+    });
+	var ProcessStatistics = new Ext.Viewport({
+        layout:'border',
+        items:[{
+                region:'west',
+                split:true,
+			    title:'统计和报表',
+                width:'16%',
+                minSize:200,
+                maxSize:400,
+                collapsible:true,
+                margins:'0 0 0 5',
+                layout:'fit',
+			    defaults: {
+					autoScroll: true
+				},
+                items:[StatisticsTree]
+			}
+			,{
+                region:'center',
+					//collapsible: true,
+			    layout:'fit',
+				split:true,
+				defaults: {
+					autoScroll: true
+				},
+                items:[CenterTab]
+		}
+		]
+    });
+//    ProcessStatistics.on('beforeshow',function(view){
+//        caseList.load();
+//    });
+    ProcessStatistics.show();
+}
+
+Ext.onReady(Statistic);

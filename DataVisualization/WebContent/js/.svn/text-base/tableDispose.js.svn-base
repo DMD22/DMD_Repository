@@ -1,0 +1,113 @@
+﻿function tableDispose(){
+	var store_tableList = new Ext.data.Store({
+		reader:new Ext.data.JsonReader(
+		{root:'rows'},
+		[{name:'id'
+		},{name:'name'}]
+		),
+		proxy:new Ext.data.HttpProxy({
+			url:'/CoalMine/servlet/DisposeServlet'
+		}),
+		baseParams:{
+			action:'getTableList'
+		}
+	})
+	store_tableList.load();
+	var tableList = new Ext.form.ComboBox({
+		width:180,
+		fieldLabel:'组织部门表',
+		store:store_tableList,
+		valueField:'id',
+		displayField:'name',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	tableList.on('select',function(comb,selectRecord,index){
+		var tableName = selectRecord.data.name;
+		store_Item.baseParams.tableName = tableName;
+		store_Item.reload();
+		ItemList.clearValue();
+	})
+	//////////////////////////////////////
+	var store_Item = new Ext.data.Store({
+		reader:new Ext.data.JsonReader(
+		{root:'rows'},
+		[{name:'id'
+		},{name:'name'}]
+		),
+		proxy:new Ext.data.HttpProxy({
+			url:'/CoalMine/servlet/DisposeServlet'
+		}),
+		baseParams:{
+			action:'getItemByTableName',
+			tableName:''
+		}
+	})
+	store_Item.load();
+	var ItemList = new Ext.form.ComboBox({
+		width:180,
+		fieldLabel:'组织部门编码',
+		store:store_Item,
+		valueField:'id',
+		displayField:'name',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	/////////////////////////////////////
+	var store_Item1 = store_Item;
+	var ItemList1 = new Ext.form.ComboBox({
+		width:180,
+		fieldLabel:'组织部门名称',
+		store:store_Item1,
+		valueField:'id',
+		displayField:'name',
+		triggerAction:'all',
+		mode:'local',
+		allowBlank : false
+	})
+	////////////////////////////////////
+	var panel = new Ext.form.FormPanel({
+		anchor:'90%',
+		title:'第二步：配置组织部门',
+		bodyStyle:'padding:10px 200px',
+		items:[tableList,ItemList,ItemList1],
+		buttons:[{text:'上一步',handler:function(){
+			if(tableList.isValid()&&ItemList.isValid()&&ItemList1.isValid()){
+				saveDispose();
+			    parent.centerFrame.location = '/CoalMine/page/databaseDispose.jsp';
+			}
+		}},{text:'保存',handler:function(){
+			if(tableList.isValid()&&ItemList.isValid()&&ItemList1.isValid()){
+				saveDispose();
+			    Ext.MessageBox.alert("提示","保存成功");
+			}
+		}},{text:'下一步',
+		handler:function(){
+			if(tableList.isValid()&&ItemList.isValid()&&ItemList1.isValid()){
+				saveDispose();
+			    parent.centerFrame.location = '/CoalMine/page/userDispose.jsp';
+			}
+		}}]
+	})
+	function saveDispose(){
+		Ext.Ajax.request({
+				url:'/CoalMine/servlet/DisposeServlet',
+				method:'POST',
+				params:{
+					action:'orgTableDispose',
+					orgTableName:tableList.getRawValue(),
+					orgTableIdItem:ItemList.getRawValue(),
+					orgTableNameItem:ItemList1.getRawValue()
+				},
+				success:function(){
+				}
+			})
+	}
+	var view = new Ext.Viewport({
+		items:[panel]
+	})
+	view.show();
+}
+Ext.onReady(tableDispose);

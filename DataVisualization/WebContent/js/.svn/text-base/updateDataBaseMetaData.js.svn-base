@@ -1,0 +1,164 @@
+﻿function updatDataBaseMetaData() {
+	var selectDatabaseID = -1;
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+				id : '-1',
+				text : '数据库',
+				expanded : true,
+				leaf : false
+			})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+				dataUrl : '/CoalMine/servlet/DataBaseServlet',
+				baseParams : {
+					action : 'getDataBaseLeftTree'
+				}
+			})
+	var leftTreePanel = new Ext.tree.TreePanel({
+				root : leftTreeRoot,
+				loader : leftTreeLoad,
+				region : 'west',
+				layout : 'fit',
+				title : '数据库元数据管理',
+				id : 'TreePanel_id',
+				split : true,
+				width : 240,
+				minSize : 175,
+				maxSize : 400,
+				collapsible : true
+			})
+	leftTreePanel.on('click', function(node) {
+				var id = node.id;
+				selectDatabaseID = id;
+				var text = node.text;
+				Ext.Ajax.request({
+							url : '/CoalMine/servlet/DataBaseServlet',
+							method : 'POST',
+							params : {
+								action : 'getDataSourceInfo',
+								id : id
+							},
+							success : function(response, request) {
+								var res = Ext.util.JSON
+										.decode(response.responseText);
+								if (res.success == true) {
+									txt_DataBaseName.setValue(res.databaseName);
+									txt_UserName.setValue(res.userName);
+									txt_PassWord.setValue(res.psw);
+									com_driver.setValue(res.drive);
+									txt_IpAddress.setValue(res.ip);
+									txt_Port.setValue(res.port);
+									txt_DataBaseDisplayName
+											.setValue(res.displayName);
+								}
+							}
+						})
+			})
+	var txt_DataBaseName = new Ext.form.TextField({
+				anchor : '70%',
+				fieldLabel : '数据库名',
+				allowBlank : false
+			});
+	var txt_DataBaseDisplayName = new Ext.form.TextField({
+				anchor : '70%',
+				fieldLabel : '数据库标识名',
+				allowBlank : false
+			});
+	var txt_UserName = new Ext.form.TextField({
+				anchor : '70%',
+				fieldLabel : '用户名',
+				allowBlank : false
+			})
+	var txt_PassWord = new Ext.form.TextField({
+				anchor : '70%',
+				fieldLabel : '密码',
+				allowBlank : false
+			})
+	var store_driver = new Ext.data.SimpleStore({
+				fields : ['id_driver', 'txt_driver'],
+				data : [[1, 'oracle数据库驱动'], [2, 'sql数据库驱动'], [3, 'mysql数据库驱动'],
+						[4, 'db2数据库驱动']]
+			})
+	var com_driver = new Ext.form.ComboBox({
+				anchor : '70%',
+				fieldLabel : '驱动',
+				allowBlank : false,
+				store : store_driver,
+				valueField : 'id_driver',
+				displayField : 'txt_driver',
+				triggerAction : 'all',
+				mode : 'local',
+				editable : false
+			})
+	var txt_IpAddress = new Ext.form.TextField({
+				anchor : '70%',
+				fieldLabel : 'IP地址',
+				allowBlank : false
+			})
+	var txt_Port = new Ext.form.TextField({
+				anchor : '70%',
+				fieldLabel : '端口号',
+				allowBlank : false
+			})
+	var rightTab = new Ext.TabPanel({
+		id : 'rightTab_id',
+		region : 'center',
+		activeTab : 0,
+		bodyStyle : 'position:relative',
+		enableTabScroll : true,
+		items : [{
+			id : 'welcome_id',
+			title : '数据库元数据修改',
+			closable : false,
+			layout : 'form',
+			buttonAlign : 'center',
+			items : [txt_DataBaseName,txt_DataBaseDisplayName,txt_UserName,txt_PassWord,com_driver,
+					txt_IpAddress,txt_Port
+					],
+			buttons : [{
+				text : '保存',
+				handler : function() {
+					if(txt_DataBaseName.isValid()&&txt_DataBaseDisplayName.isValid()&&txt_UserName.isValid()&&txt_PassWord.isValid()
+					    &&com_driver.isValid()&&txt_IpAddress.isValid()&&txt_Port.isValid()){
+					    	Ext.Ajax.request({
+								url : '/CoalMine/servlet/DataBaseServlet',
+								method : 'POST',
+								params : {
+									action : 'updateDataBase',
+									selectDatabaseID:selectDatabaseID,
+									databaseName : txt_DataBaseName.getValue(),
+									databaseDisplayName:txt_DataBaseDisplayName.getValue(),
+									userName : txt_UserName.getValue(),
+									psw : txt_PassWord.getValue(),
+									driver : com_driver.getRawValue(),
+									ip : txt_IpAddress.getValue(),
+									port : txt_Port.getValue()
+								},
+								success : function(response, request) {
+									var res = Ext.util.JSON
+											.decode(response.responseText);
+									if (res.success == true) {
+										Ext.Msg.show({
+													title : '提示',
+													msg : '修改成功!',
+													buttons : Ext.Msg.OK
+												});
+										leftTreeRoot.reload();
+									} else
+										Ext.Msg.show({
+													title : '提示',
+													msg : '修改失败!',
+													buttons : Ext.Msg.OK
+												})
+								}
+							})
+					    }
+				}
+			}]
+		}]
+	})
+	var vp = new Ext.Viewport({
+				id : 'ViewPort_Id',
+				layout : 'border',
+				items : [leftTreePanel, rightTab]
+			})
+}
+Ext.onReady(updatDataBaseMetaData);

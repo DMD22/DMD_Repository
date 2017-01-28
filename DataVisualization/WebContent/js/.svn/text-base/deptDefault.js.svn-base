@@ -1,0 +1,136 @@
+﻿var defaultPage = new Ext.Action({
+	text:'首页'
+})
+var metaDataManageMenu = new Ext.menu.Menu({
+	items:[{
+		text:'数据库元数据管理',
+		menu:new Ext.menu.Menu({
+			items:[{
+				text:'数据库元数据查看',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/viewDataBaseMetaData.jsp';
+		             document.title = "数据库元数据查看";
+	            }
+			},{
+				text:'数据库元数据增加',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/addDataBaseMetaData.jsp';
+		             document.title = "数据库元数据增加";
+	            }
+			},{
+				text:'数据库元数据维护',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/updateDataBaseMetaData.jsp';
+		             document.title = "数据库元数据维护";
+	            }
+			}]
+		})
+	},{
+		text:'数据表元数据管理',
+		menu:new Ext.menu.Menu({
+			items:[{
+				text:'数据表元数据查看',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/viewDataTable.jsp';
+		             document.title = "数据表元数据查看";
+	            }
+			},{
+				text:'数据表元数据增加',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/addDataTable.jsp';
+		             document.title = "数据表元数据增加";
+	            }
+			},{
+				text:'数据表元数据维护',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/updateDataTable.jsp';
+		             document.title = "数据表元数据维护";
+	            }
+			}]
+		})
+	},{
+		text:'数据项元数据管理',
+		menu:new Ext.menu.Menu({
+			items:[{
+				text:'数据项元数据查看',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/showDataItem.jsp';
+		             document.title = "数据项元数据查看";
+	            }
+			},{
+				text:'数据项元数据增加',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/addDataItem.jsp';
+		             document.title = "数据项元数据增加";
+	            }
+			},{
+				text:'数据项元数据维护',
+				handler : function() {
+		             Ext.get('centerFrame').dom.src = 'page/updateDataItem.jsp';
+		             document.title = "数据项元数据维护";
+	            }
+			}]
+		})
+	}]
+})
+var metaDataManage = new Ext.Action({
+	text:'元数据管理',
+	menu:metaDataManageMenu
+})
+var metaDataManageMenu1 = new Ext.menu.Menu({
+	items:[{
+		text:'数据表共享配置',
+		handler : function() {
+		     Ext.get('centerFrame').dom.src = 'page/tableShareDispose.jsp';
+		     document.title = "数据表共享配置";
+	    }
+	},{
+		text:'数据项共享配置',
+		handler : function() {
+		     Ext.get('centerFrame').dom.src = 'page/itemShareDispose.jsp';
+		     document.title = "数据项共享配置";
+	    }
+	},{
+		text:'数据共享申请',
+		menu:[{
+			text:'数据表共享申请',
+			handler:function(){
+			     Ext.get('centerFrame').dom.src = 'page/tableShareApplication.jsp';
+		         document.title = "数据表共享申请";
+		    }
+		},{
+			text:'数据项共享申请',
+			handler:function(){
+			     Ext.get('centerFrame').dom.src = 'page/itemShareApplication.jsp';
+		         document.title = "数据项共享申请";
+		    }
+		}]
+		
+	},{
+		text:'数据共享审批',
+		menu:[{
+			text:'数据表共享审批',
+			handler:function(){
+		         Ext.get('centerFrame').dom.src = 'page/tableShareApproval.jsp';
+		         document.title = "数据表共享审批";
+		    }
+		},{
+			text:'数据项共享审批',
+			handler:function(){
+		         Ext.get('centerFrame').dom.src = 'page/itemShareApproval.jsp';
+		         document.title = "数据项共享审批";
+		    }
+		}]
+		
+	},{
+		text:'共享数据查看',
+		handler:function(){
+		        Ext.get('centerFrame').dom.src = 'page/dataView.jsp';
+		        document.title = "共享数据查看";
+	   }
+	}]
+})
+var metaDataShare = new Ext.Action({
+	text:'元数据共享',
+	menu:metaDataManageMenu1
+})

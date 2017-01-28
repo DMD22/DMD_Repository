@@ -1,0 +1,260 @@
+﻿function tableShareApproval() {
+	var dbId = -1;
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+				id : '-1',
+				text : '数据库',
+				expanded : true,
+				leaf : false
+			})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+				dataUrl : '/CoalMine/servlet/DataBaseServlet',
+				baseParams : {
+					action : 'getDataBaseLeftTree'
+				}
+			})
+	var leftTreePanel = new Ext.tree.TreePanel({
+		root : leftTreeRoot,
+		loader : leftTreeLoad,
+		region : 'west',
+		layout : 'fit',
+		title : '数据表共享审批',
+		id : 'TreePanel_id',
+		split : true,
+		width : 240,
+		minSize : 175,
+		maxSize : 400,
+		collapsible : true
+	})
+	leftTreePanel.on('click',function(node){
+		if(node.isLeaf()){
+			dbId = node.id;
+			grid_applicationList.getStore().removeAll();
+			store_applicationTableList.baseParams.dbId = dbId;
+			store_applicationTableList.load();
+		}
+	})
+	var store_applicationTableList = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root:'rows'},
+                 [{name:'recordId'},
+                  {name : "dbId"},
+                  {name : "dbName"},
+                  {name : "dbDisplayName"},
+                  {name :"orgId"},
+                  {name :"orgName"},
+                  {name :"recordId"},
+                  {name :"tableName"},
+                  {name :"tableChinaName"},
+                  {name :"keywords"},
+                  {name :"description"},
+                  {name :"orgId"},
+                  {name :"orgName"}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/tableApplicationApprovalServlet'
+		}),
+		baseParams : {
+			action : 'getApplicationTableList',
+			dbId : dbId
+		}
+	})
+	var store_otherOrg = new Ext.data.Store({
+		proxy:new Ext.data.HttpProxy({url:'/CoalMine/servlet/OrgOperationServlet'}),
+		baseParams:{
+		   action:'getOrgList'
+		},
+	    reader:new Ext.data.JsonReader(
+			{root:'rows'},
+			[{name:"id"},{name:"name"}]
+		)
+	})
+	store_otherOrg.load();
+	var comb_otherOrg = new Ext.form.ComboBox({
+		id:'id_otherOrg',
+		width:160,
+		store:store_otherOrg,
+		valueField:'id',
+		displayField:'name',
+		triggerAction:'all',
+		mode:'local'
+	})
+	var txt_keywords = new Ext.form.TextField({
+	})
+	var sm = new Ext.grid.CheckboxSelectionModel({singleSelect : false});
+	var grid_applicationList = new Ext.grid.EditorGridPanel({
+			autoWidth:true,
+			store:store_applicationTableList,
+			title:'申请列表',
+			clicksToEdit:1,
+			buttonAlign:'center',
+			tbar:[{text:'同意',handler:agree},
+				  {text:'驳回',handler:reject},
+				  {text:'删除',handler:deleteApplication},
+			       '组织部门:',comb_otherOrg,'-','关键词:',txt_keywords,
+			       {text:'搜索',handler:search}],
+			sm:sm,
+			columns:[
+			     sm,
+			    {header:'数据库名称',width:120,dataIndex:'dbDisplayName'},
+			    {header:'申请部门',width:120,dataIndex:'orgName'},
+				{header:'数据表名称',width:120,dataIndex:'tableChinaName'},
+				{header:'关键词',width:120,dataIndex:'keywords'},
+				{header:'数据表描述',width:120,dataIndex:'description'}
+			]
+	})
+	function agree(){
+		if(grid_applicationList.getSelectionModel().hasSelection()){
+			var selItems = grid_applicationList.getSelectionModel().getSelections();
+			var approvalString = dbId+"#";
+			var tmp='';
+			Ext.each(selItems,function(record){
+				tmp+=record.data.recordId+","
+			})
+			if(tmp!='')
+			   tmp = tmp.substring(0,tmp.length-1);
+			approvalString+=tmp;
+			Ext.Ajax.request({
+				url : '/CoalMine/servlet/tableApplicationApprovalServlet',
+				params : {
+					action : 'tableShareApproval',
+					approvalString : approvalString
+				},
+				success : function(response,request) {
+					var res = Ext.util.JSON.decode(response.responseText);
+					if(res.success == true){
+						Ext.Msg.show({
+							title : '提示',
+							msg : '操作成功!',
+							buttons : Ext.Msg.OK
+						})
+						grid_applicationList.getStore().reload();
+					}
+					else
+						Ext.Msg.show({
+							title : '提示',
+							msg : '操作失败!',
+							buttons : Ext.Msg.OK
+						})
+				}
+			})
+		}
+	}
+	function reject(){
+		if(grid_applicationList.getSelectionModel().hasSelection()){
+			var selItems = grid_applicationList.getSelectionModel().getSelections();
+			var approvalString = dbId+"#";
+			var tmp='';
+			Ext.each(selItems,function(record){
+				tmp+=record.data.recordId+","
+			})
+			if(tmp!='')
+			   tmp = tmp.substring(0,tmp.length-1);
+			approvalString+=tmp;
+			Ext.Ajax.request({
+				url : '/CoalMine/servlet/tableApplicationApprovalServlet',
+				params : {
+					action : 'tableShareApproval_reject',
+					approvalString : approvalString
+				},
+				success : function(response,request) {
+					var res = Ext.util.JSON.decode(response.responseText);
+					if(res.success == true){
+						Ext.Msg.show({
+							title : '提示',
+							msg : '操作成功!',
+							buttons : Ext.Msg.OK
+						})
+						grid_applicationList.getStore().reload();
+					}
+					else
+						Ext.Msg.show({
+							title : '提示',
+							msg : '操作失败!',
+							buttons : Ext.Msg.OK
+						})
+				}
+			})
+		}
+	}
+	function deleteApplication(){
+		if(grid_applicationList.getSelectionModel().hasSelection()){
+			var selItems = grid_applicationList.getSelectionModel().getSelections();
+			var approvalString = dbId+"#";
+			var tmp='';
+			Ext.each(selItems,function(record){
+				tmp+=record.data.recordId+","
+			})
+			if(tmp!='')
+			   tmp = tmp.substring(0,tmp.length-1);
+			approvalString+=tmp;
+			Ext.Ajax.request({
+				url : '/CoalMine/servlet/tableApplicationApprovalServlet',
+				params : {
+					action : 'tableShareApproval_delete',
+					approvalString : approvalString
+				},
+				success : function(response,request) {
+					var res = Ext.util.JSON.decode(response.responseText);
+					if(res.success == true){
+						Ext.Msg.show({
+							title : '提示',
+							msg : '操作成功!',
+							buttons : Ext.Msg.OK
+						})
+						grid_applicationList.getStore().reload();
+					}
+					else
+						Ext.Msg.show({
+							title : '提示',
+							msg : '操作失败!',
+							buttons : Ext.Msg.OK
+						})
+				}
+			})
+		}
+	}
+	function search(){
+		if(comb_otherOrg.getValue()!=''||txt_keywords.getValue()!=''){
+			store_applicationTableList.filterBy(function(record,id){
+			    var tmp = false;
+			    if(txt_keywords.getValue()!=''){
+			    	var keywordsList = txt_keywords.getValue().split(";");
+			    	for(var i = 0;i<keywordsList.length;i++){
+				        var index = record.data.keywords.indexOf(keywordsList[i]);
+				        if(index>=0){
+					        tmp = true;
+					        break;
+				        }
+			        }
+			    }
+			    if(comb_otherOrg.getValue()!=''&&txt_keywords.getValue()!=''){
+			    	if(record.data.orgId == comb_otherOrg.getValue()&&tmp)
+			           return true;
+			        else
+			           return false;
+			    }
+			    else{
+			    	if(record.data.orgId == comb_otherOrg.getValue()||tmp)
+			           return true;
+			        else
+			           return false;
+			    }
+			    
+		  })
+		}
+		else
+		    store_applicationTableList.reload();
+	}
+	var rightTab = new Ext.TabPanel({
+		id : 'rightTab_id',
+		region : 'center',
+		activeTab : 0,
+		bodyStyle : 'position:relative',
+		enableTabScroll : true,
+		items : [grid_applicationList]
+	})
+	var vp = new Ext.Viewport({
+				id : 'ViewPort_Id',
+				layout : 'border',
+				items : [leftTreePanel, rightTab]
+			})
+}
+Ext.onReady(tableShareApproval);

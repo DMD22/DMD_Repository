@@ -1,0 +1,495 @@
+﻿function dataView(){
+	var dbId = -1;
+	var orgId = -1;
+	var orgName = '';
+	var tableId = -1;
+	var itemList = '';
+	var reader1 = '';
+	var type = '';
+	
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+		id:'-1',
+		text:'数据表',
+		expanded:true,
+		leaf:false
+	})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+		dataUrl:'/CoalMine/servlet/DataTableServlet',
+		baseParams:{
+			action:'getDataTableOtherAndSelfOrg'
+		}
+	})
+	leftTreeLoad.on('load',function(){
+	Ext.Ajax.request({
+		url : '/CoalMine/servlet/DataItemServlet',
+		params : {
+			action : 'dataViewDispose'
+		},
+		success : function(response,request) {
+		}
+	})
+	})
+	var leftTreePanel = new Ext.tree.TreePanel({
+		root:leftTreeRoot,
+		loader:leftTreeLoad,
+		autoScroll:true,
+		region:'west',
+		layout:'fit',
+		title:'数据表列表',
+		id:'TreePanel_id',
+	    split : true,
+		width : 240,
+		minSize : 175,
+		maxSize : 400,
+		collapsible : true
+	})
+	var store_viewItem = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root:'rows'},
+                 [{name : "itemId"},
+                  {name : "itemName"},
+                  {name : "itemChinaName"},
+                  {name :"itemDisplayName"}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataItemServlet'
+		}),
+		baseParams : {
+			action : 'getDataItemListView',
+			dbId : dbId,
+			tableId:tableId
+		}
+	})
+	leftTreePanel.on('click',function(node){
+	    if(node.isLeaf()){
+	    	type = node.parentNode.parentNode.parentNode.id;
+	    	comb_queryItem.getStore().removeAll();
+	    	comb_queryItem.clearValue();
+	    	ds_itemList.removeAll();
+	    	txt_query.setValue('');
+	    	dbId = node.parentNode.id.split('_')[1];
+	    	tableId = node.id.split('_')[2];
+	    	store_ItemByTableId.baseParams.dbId = dbId;
+	    	store_ItemByTableId.baseParams.tableId = tableId;
+	    	store_ItemByTableId.baseParams.type = type;
+	    	store_ItemByTableId.load({
+	    		callback:function(){
+	    			var s_fields='';
+		            var s_columns='';
+		            itemList = '';
+		            store_ItemByTableId.each(function(record){
+		            	if(record.data.isquery==true){
+		            		var _type = store_queryItem.recordType
+		            		var _newRecord = new _type({
+		            			itemName:record.data.itemName,
+		            			itemDisplayName:record.data.itemForOtherName
+		            		})
+		            		store_queryItem.insert(store_queryItem.getCount(),_newRecord);
+		            	}
+//		            	   store_queryItem.insert(store_queryItem.getCount(),[record.data.itemName,record.data.itemForOtherName]);
+		            	if(reader1.length>0)
+		            	   reader1+=",";
+		            	reader1+="{name:'"+record.data.itemName+"'}";
+		            	if(itemList.length>0)
+		            	   itemList+=","
+		            	itemList+=record.data.itemName;
+			           if(s_fields.length>0)
+			              s_fields+=',';
+			           if(s_columns.length>0)
+			              s_columns+=',';
+			           s_fields+='{name:"'+record.data.itemName+'"}';
+			           s_columns+='{header:"'+record.data.itemForOtherName+'",dataIndex:"'+record.data.itemName+'"}';
+		            })
+		            var fields = eval('(['+s_fields+'])');
+		            grid_data.getColumnModel().setConfig(eval('(['+s_columns+'])'));
+		            
+		            /**
+		             * 数据load
+		             */
+		            store_itemViewValue.on('beforeload',function(){
+		            	store_itemViewValue.baseParams.itemList = itemList;
+						store_itemViewValue.baseParams.dbId = dbId;
+						store_itemViewValue.baseParams.tableId = tableId;
+						store_itemViewValue.reader = new Ext.data.JsonReader({
+									root : 'rows',fields:fields
+								});
+		            })
+		            store_itemViewValue.load({
+		            	callback:function(){
+		                     grid_data.getView().refresh();
+		                     store_allItem.baseParams.type = type;
+		                     store_allItem.baseParams.dbId = dbId;
+	    	                 store_allItem.baseParams.tableId = tableId;
+							 store_allItem.load({
+								callback : function() {
+									var type = ds_itemList.recordType;
+									store_allItem.each(function(record) {
+										if (record.data.isview) {
+											var newItem = new type({
+												id : record.data.itemId,
+												text : record.data.itemDisplayName
+											})
+											ds_itemList.insert(ds_itemList
+															.getCount(),
+													newItem);
+										}
+									})
+								}
+							});
+		            	}
+		            });
+	    		}
+	    	});
+	    	if(node.parentNode.parentNode.parentNode.id=='type_self'){
+	    	   grid_allItem.getColumnModel().setHidden(2,true);
+	    	}
+	}})
+	var store_ItemByTableId = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root:'rows'},
+                 [{name :"itemId"},
+                  {name :"itemName"},
+                  {name :"itemChinaName"},
+                  {name :"itemForOtherName"},
+                  {name :"description"},{name:'isquery'},{name:'showNum'}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataItemServlet'
+		}),
+		sortInfo : {
+			field : 'showNum',
+			direction : 'ASC'
+		},
+		baseParams : {
+			action : 'getViewDataItem',
+			type : type,
+			dbId : dbId,
+			tableId:tableId
+		}
+	})
+	var store_itemViewValue = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root:'rows'},
+                 []),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataItemServlet'
+		}),
+		baseParams : {
+			action : 'getViewData',
+			itemList:itemList,
+			dbId:dbId,
+			tableId:tableId
+		}
+	})
+	
+	var store_queryItem = new Ext.data.SimpleStore({
+		fields:['itemName','itemDisplayName'],
+		data:[]		
+	})
+	var comb_queryItem = new Ext.form.ComboBox({
+		id:'id_queryItem',
+		width:120,
+		store:store_queryItem,
+		valueField:'itemName',
+		displayField:'itemDisplayName',
+		triggerAction:'all',
+		mode:'local'
+	})
+	var txt_query = new Ext.form.TextField({})
+	function query(){
+		if(comb_queryItem.getValue()!=''&&txt_query.getValue()!=''){
+		    store_itemViewValue.filterBy(function(record,id){
+			    if(record.get(comb_queryItem.getValue()).indexOf(txt_query.getValue())>=0)
+			        return true;
+			    return false;
+		    })
+		}else
+		store_itemViewValue.reload();
+	}
+	var grid_data = new Ext.grid.EditorGridPanel({
+			autoWidth:true,
+			store:store_itemViewValue,
+			title:'数据查看',
+			clicksToEdit:1,
+			buttonAlign:'center',
+			tbar:['搜索条件:',comb_queryItem,txt_query,{text:'搜索',handler:query}],
+			cm:new Ext.grid.ColumnModel([])
+	})
+	var store_allItem = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root:'rows'},
+                 [{name :"dbId"},
+                  {name :"dbDisplayName"},
+                  {name :"tableId"},
+                  {name :"tableDisplayName"},
+                  {name :"itemId"},
+                  {name :"itemDisplayName"},
+                  {name :"description"},
+                  {name :"displayName"},{name:'isview'},{name:'showNum'}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataItemServlet'
+		}),
+		baseParams : {
+			action : 'getAllItem',
+			type:type,
+			dbId : dbId,
+			tableId:tableId
+		}
+	})
+    this.checkBox = new Ext.ux.grid.CheckColumn({
+    	id:'sun_cc',
+     	header: '是否显示',
+     	dataIndex: 'isview',
+     	readOnly:false,
+     	width: 60
+     });	
+     this.checkBox.onMouseDown = function(e,t){
+     	if(false == this.readOnly){//[7.3]
+			if (t.className&& t.className.indexOf('x-grid3-cc-' + this.id) != -1) {
+				e.stopEvent();
+				var index = this.grid.getView().findRowIndex(t);
+				var new_record = this.grid.store.getAt(index);
+				new_record.set(this.dataIndex, !new_record.data[this.dataIndex]);
+				new_record.commit();
+				if(new_record.get(this.dataIndex)==false){
+					var index = ds_itemList.find("id",new_record.data.itemId);
+					if(index>=0)
+					   ds_itemList.removeAt(index);
+				}else{
+					var _type = ds_itemList.recordType;
+					var _new = new _type({
+						id:new_record.data.itemId,
+						text:new_record.data.itemDisplayName
+					})
+					ds_itemList.insert(ds_itemList.getCount(),_new);
+				}
+			}
+		}
+     }
+     var grid_allItem = new Ext.grid.EditorGridPanel({
+		autoWidth:true,
+		store:store_allItem,
+		title:'数据项列表',
+		clicksToEdit:1,
+		height:300,
+		buttonAlign:'center',
+		plugins: [this.checkBox],
+		columns:[
+		    {header:'数据库名称',width:160,dataIndex:'dbDisplayName'},
+			{header:'数据表名称',width:160,dataIndex:'tableDisplayName'},
+			{header:'数据项名称',width:160,dataIndex:'itemDisplayName'},
+			{header:'数据项描述',width:160,dataIndex:'description'},
+			{header:'显示名称',width:160,dataIndex:'displayName',editor:new Ext.form.TextField({allowBlank : false})},
+			this.checkBox
+		]		
+	})
+	var ds_itemList = new Ext.data.SimpleStore({
+		fields:['id','text'],
+		data:[]	
+	})
+	var ms = new Ext.form.MultiSelect({
+		store:ds_itemList,
+        autoScroll:true,
+        height:180
+	})
+	function save(){
+		var temp = '';
+		store_allItem.each(function(record){
+			var isview = 0;
+			if(record.data.isview==true)
+			    isview = 1;
+			temp+=record.data.itemId+","+record.data.displayName+","+isview+","+record.data.showNum+"#";
+		})
+		if(!temp=="")
+		    temp = temp.substring(0,temp.length-1);
+		var action='';
+		if(type=='type_other')
+		    action = 'viewDispose';
+		else if(type=='type_self')
+		    action = 'viewDisposeSelf';
+		Ext.Ajax.request({
+			url : '/CoalMine/servlet/DataItemServlet',
+		    params : {
+			   action : action,
+			   dbId :dbId,
+			   tableId:tableId,
+			   temp:temp
+		    },
+		    success :function(response,request){
+		    	var res = Ext.util.JSON.decode(response.responseText);
+		    	if(res.success==true){
+		    		Ext.Msg.show({
+						title : '提示',
+						msg : '添加成功!',
+						buttons : Ext.Msg.OK
+					});
+					store_viewItem.reload();
+					store_ItemByTableId.reload();
+					store_itemViewValue.reload();
+					grid_data.getView().refresh();
+		    	}else{
+		    		Ext.Msg.show({
+						title : '提示',
+						msg : '添加失败!',
+						buttons : Ext.Msg.OK
+					});
+		    	}
+		    }
+		})
+	}
+	function oneUp(){
+		if(ms.getSelectedIndexes()>0){
+			var selectIndex = ms.getSelectedIndexes();
+			var recordCurrent = ds_itemList.getAt(ms.getSelectedIndexes());
+			var recordLast = ds_itemList.getAt(ms.getSelectedIndexes()-1);
+			var index = grid_allItem.getStore().find("itemId",recordCurrent.data.id);
+			if(index>=0){
+				var recordCurrentItem =  grid_allItem.getStore().getAt(index);
+				var showNumCurrent = grid_allItem.getStore().getAt(index).data.showNum;
+				var index1 = grid_allItem.getStore().find("itemId",recordLast.data.id);
+				if(index1>=0){
+					ds_itemList.remove(recordCurrent);
+					ds_itemList.insert(selectIndex-1,recordCurrent);
+					var recordLastItem = grid_allItem.getStore().getAt(index1);
+					var showNumLast = grid_allItem.getStore().getAt(index1).data.showNum;
+					recordCurrentItem.set("showNum",showNumLast);
+					recordLastItem.set("showNum",showNumCurrent);
+					recordCurrentItem.commit();
+					recordLastItem.commit();
+				}
+			}
+		}
+	}
+	function oneDown(){
+		if(ms.getSelectedIndexes()<ds_itemList.getCount()-1){
+			var selectIndex = ms.getSelectedIndexes();
+			var nextIndex = 1;
+			var recordCurrent = ds_itemList.getAt(ms.getSelectedIndexes());
+			nextIndex=parseInt (ms.getSelectedIndexes())+parseInt(1);
+			var recordNext = ds_itemList.getAt(nextIndex);
+			var index = grid_allItem.getStore().find("itemId",recordCurrent.data.id);
+			if(index>=0){
+				var recordCurrentItem = grid_allItem.getStore().getAt(index);
+				var showNumCurrent = grid_allItem.getStore().getAt(index).data.showNum;
+				var index1 = grid_allItem.getStore().find("itemId",recordNext.data.id);
+				if(index1>=0){
+					ds_itemList.remove(recordCurrent);
+					ds_itemList.insert(parseInt(selectIndex)+parseInt(1),recordCurrent);
+					var recordNextItem = grid_allItem.getStore().getAt(index1);
+					var showNumNext = grid_allItem.getStore().getAt(index1).data.showNum;
+					recordCurrentItem.set("showNum",showNumNext);
+					recordNextItem.set("showNum",showNumCurrent);
+					recordCurrentItem.commit();
+					recordNextItem.commit();
+				}
+			}
+		}
+	}
+	function toTop(){
+		if(ms.getSelectedIndexes()>0){
+			var selectIndex = ms.getSelectedIndexes();
+			var selectRecord = ds_itemList.getAt(ms.getSelectedIndexes());
+			var selectItemId = selectRecord.data.id;
+			for(var i=parseInt(selectIndex)-parseInt(1);i>=0;i--){
+				var currentRecord = ds_itemList.getAt(i);
+				var selectedRecord = ds_itemList.getAt(ds_itemList.find("id",selectItemId));
+				var currentIndex = ds_itemList.find("id",selectItemId);
+				var index = grid_allItem.getStore().find("itemId",selectItemId);
+				if(index>0){
+					 var recordCurrentItem = grid_allItem.getStore().getAt(index);
+				     var showNumCurrent = grid_allItem.getStore().getAt(index).data.showNum;
+				     var index1 = grid_allItem.getStore().find("itemId",currentRecord.data.id);
+				     if(index1>=0){
+					    ds_itemList.remove(selectedRecord);
+					    ds_itemList.insert(parseInt(currentIndex)-parseInt(1),selectedRecord);
+					    var recordLastItem = grid_allItem.getStore().getAt(index1);
+					    var showNumLast = grid_allItem.getStore().getAt(index1).data.showNum;
+					    recordCurrentItem.set("showNum",showNumLast);
+					    recordLastItem.set("showNum",showNumCurrent);
+					    recordCurrentItem.commit();
+					    recordLastItem.commit();
+				    }
+				}
+			}
+		}
+	}
+	function toDown(){
+		if(ms.getSelectedIndexes()<ds_itemList.getCount()-1){
+			var selectIndex = ms.getSelectedIndexes();
+			var selectRecord = ds_itemList.getAt(ms.getSelectedIndexes());
+			var selectItemId = selectRecord.data.id;
+			for(var i=parseInt(selectIndex)+parseInt(1);i<ds_itemList.getCount();i++){
+				var currentRecord = ds_itemList.getAt(i);
+				var selectedRecord = ds_itemList.getAt(ds_itemList.find("id",selectItemId));
+				var currentIndex = ds_itemList.find("id",selectItemId);
+				var index = grid_allItem.getStore().find("itemId",selectItemId);
+				if(index>0){
+					 var recordCurrentItem = grid_allItem.getStore().getAt(index);
+				     var showNumCurrent = grid_allItem.getStore().getAt(index).data.showNum;
+				     var index1 = grid_allItem.getStore().find("itemId",currentRecord.data.id);
+				     if(index1>=0){
+					    ds_itemList.remove(selectedRecord);
+					    ds_itemList.insert(parseInt(currentIndex)+parseInt(1),selectedRecord);
+					    var recordNextItem = grid_allItem.getStore().getAt(index1);
+					    var showNumNext = grid_allItem.getStore().getAt(index1).data.showNum;
+					    recordCurrentItem.set("showNum",showNumNext);
+					    recordNextItem.set("showNum",showNumCurrent);
+					    recordCurrentItem.commit();
+					    recordNextItem.commit();
+				    }
+				}
+			}
+		}
+	}
+	var fieldset_showNum = new Ext.form.FieldSet({
+		layout:'column',
+		border:false,
+		buttonAlign:'center',
+		items:[{
+			xtype : 'container',
+			autoEl : {},
+			border : false,
+			height:180,
+			columnWidth : 0.1,
+			align:'right',
+			layout : 'form',
+			items : [{},{}, {
+				xtype : 'button',
+				text : '移至首位',
+				handler:toTop
+			},  {
+				xtype : 'button',
+				text : '上移一位',
+				handler:oneUp
+			},  {
+				xtype : 'button',
+				text : '下移一位',
+				handler:oneDown
+			},  {
+				xtype : 'button',
+				text : '移至末位',
+				handler:toDown
+			}, {},{}]
+		},{xtype : 'container',
+			autoEl : {},
+			border : false,
+			columnWidth : 0.5,
+			layout:'fit',
+			items : ms
+		}],
+		buttons:[{text:'保存',handler:save}]
+	})
+	var newTablePanel = new Ext.form.FormPanel({
+		title:'数据显示配置',
+		layout:'form',
+		items:[grid_allItem,fieldset_showNum]
+	})
+	var tabPanel = new Ext.TabPanel({
+			id : 'disposeDsTab_id',
+			region : 'center',
+			activeTab : 0,
+		    bodyStyle : 'position:relative',
+			enableTabScroll : true,
+			items : [grid_data,newTablePanel]
+		})
+	var vp = new Ext.Viewport({
+		id:'ViewPort_Id',
+		layout:'border',
+		items:[leftTreePanel,tabPanel]
+	})
+}
+Ext.onReady(dataView);

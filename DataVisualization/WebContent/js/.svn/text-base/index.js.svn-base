@@ -1,0 +1,14 @@
+﻿var Login = new Ext.Action({
+	text:'登录',
+	handler : function() {
+		Ext.get('centerFrame').dom.src = 'page/login.jsp';
+		document.title = "登录";
+	}
+})
+var UserMgr = new Ext.Action({
+	text:'用户配置',
+	handler : function() {
+		Ext.get('centerFrame').dom.src = 'page/databaseDispose.jsp';
+		document.title = "数据库配置";
+	}
+})

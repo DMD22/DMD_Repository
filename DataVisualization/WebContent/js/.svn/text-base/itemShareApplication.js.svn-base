@@ -1,0 +1,142 @@
+﻿function itemShareApplication(){
+	var dbId = -1;
+	var orgId = -1;
+	var orgName = '';
+	var tableId = -1;
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+		id:'-1',
+		text:'数据表',
+		expanded:true,
+		leaf:false
+	})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+		dataUrl:'/CoalMine/servlet/DataTableServlet',
+		baseParams:{
+			action:'getDataTableOfOtherOrgLeftTreeAlready'
+		}
+	})
+	var leftTreePanel = new Ext.tree.TreePanel({
+		root:leftTreeRoot,
+		loader:leftTreeLoad,
+		autoScroll:true,
+		region:'west',
+		layout:'fit',
+		title:'数据表列表',
+		id:'TreePanel_id',
+	    split : true,
+		width : 240,
+		minSize : 175,
+		maxSize : 400,
+		collapsible : true
+	})
+	leftTreePanel.on('click',function(node){
+	    if(node.isLeaf()){
+	    	dbId = node.parentNode.id.split('_')[1];
+	    	tableId = node.id.split('_')[2];
+	    	orgId = node.parentNode.parentNode.id;
+	    	orgName = node.parentNode.parentNode.text;
+	    	store_ItemByTableId.baseParams.dbId = dbId;
+	    	store_ItemByTableId.baseParams.orgId = orgId;
+	    	store_ItemByTableId.baseParams.orgName = orgName;
+	    	store_ItemByTableId.baseParams.tableId = tableId;
+	    	store_ItemByTableId.load();
+	    }
+	})
+	var store_ItemByTableId = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root:'rows'},
+                 [{name : "dbId"},
+                  {name : "dbName"},
+                  {name : "dbDisplayName"},
+                  {name :"orgId"},
+                  {name :"orgName"},
+                  {name :"tableId"},
+                  {name :"tableName"},
+                  {name :"tableChinaName"},
+                  {name :"tableForOtherName"},
+                  {name :"itemId"},
+                  {name :"itemName"},
+                  {name :"itemChinaName"},
+                  {name :"itemForOtherName"},
+                  {name :"description"}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataItemServlet'
+		}),
+		baseParams : {
+			action : 'getDataItemListNotShareByTableId',
+			dbId : dbId,
+			tableId:tableId,
+			orgId:orgId,
+			orgName:orgName
+		}
+	})
+	var csm_existItem = new Ext.grid.CheckboxSelectionModel({singleSelect : false});
+	var grid_ItemList = new Ext.grid.EditorGridPanel({
+			autoWidth:true,
+			store:store_ItemByTableId,
+			title:'已有数据项',
+			clicksToEdit:1,
+			buttonAlign:'center',
+			sm:csm_existItem,
+			tbar:[{text:'申请',handler:function(){
+				if(grid_ItemList.getSelectionModel().hasSelection()){
+					var tmpString = dbId+"#"+tableId+"#";
+					var tmp = '';
+					var selItems = grid_ItemList.getSelectionModel().getSelections();
+					Ext.each(selItems,function(record){
+						tmp+=record.data.itemId+",";
+					})
+					if(tmp!='')
+					   tmp = tmp.substring(0,tmp.length-1);
+					tmpString+=tmp;
+					Ext.Ajax.request({
+						url : '/CoalMine/servlet/DataItemServlet',
+						params : {
+							action : 'itemShareApplication',
+							tmpString : tmpString
+						},
+						success : function(response,request) {
+							var res = Ext.util.JSON.decode(response.responseText);
+							if(res.success == true)
+								Ext.Msg.show({
+									title : '提示',
+									msg : '操作成功!',
+									buttons : Ext.Msg.OK
+								})
+							else
+								Ext.Msg.show({
+									title : '提示',
+									msg : '操作失败!',
+									buttons : Ext.Msg.OK
+								})
+						}
+					})
+				}
+			}}],
+			columns:[
+			     csm_existItem,
+			    {header:'所属部门',width:180,dataIndex:'orgName'},
+			    {header:'数据库名称',width:180,dataIndex:'dbDisplayName'},
+				{header:'数据表名称',width:180,dataIndex:'tableForOtherName'},
+				{header:'数据项名称',width:180,dataIndex:'itemForOtherName'},
+				{header:'数据项描述',width:180,dataIndex:'description'}
+			]
+	})
+	var newTablePanel = new Ext.form.FormPanel({
+		title:'新数据项申请',
+		items:[]
+	})
+	var tabPanel = new Ext.TabPanel({
+			id : 'disposeDsTab_id',
+			region : 'center',
+			activeTab : 0,
+		    bodyStyle : 'position:relative',
+			enableTabScroll : true,
+			items : [grid_ItemList]
+		})
+	var vp = new Ext.Viewport({
+		id:'ViewPort_Id',
+		layout:'border',
+		items:[leftTreePanel,tabPanel]
+	})
+}
+Ext.onReady(itemShareApplication);

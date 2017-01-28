@@ -1,0 +1,203 @@
+	Ext.BLANK_IMAGE_URL = '../img/s.gif';	
+//ext设置提示	
+	Ext.QuickTips.init();
+	Ext.form.Field.prototype.msgTarget = 'side';
+
+//修复前台到后台中文乱码的问题
+	Ext.lib.Ajax.defaultPostHeader += '; charset=utf-8';
+//修复ext2.0 DateField在Firefox下被无限拉长
+	Ext.override(Ext.menu.DateMenu,{        
+    		render : function()
+    				{        
+        				Ext.menu.DateMenu.superclass.render.call(this);        
+        				if(Ext.isGecko)
+        				{        
+            				this.picker.el.dom.childNodes[0].style.width = '178px';        
+            				this.picker.el.dom.style.width = '178px';        
+        				}        
+    				}        
+								}); 
+//修复ext2.0 DateField在IE8下被截断。郁闷呢extjs2.x不识别Ext.isIE8而是isIE6
+	Ext.override(Ext.menu.Menu, {
+    autoWidth : function(){
+        var el = this.el, ul = this.ul;
+        if(!el){
+            return;
+        }
+        var w = this.width;
+        if(w){
+            el.setWidth(w);
+        }else if(Ext.isIE && !Ext.isIE6){
+            el.setWidth(this.minWidth);
+            var t = el.dom.offsetWidth; // force recalc
+            el.setWidth(ul.getWidth()+el.getFrameWidth("lr"));
+        }
+    }
+					});
+// 扩展store自动更新startAutoRefresh+stopAutoRefresh[3.6]
+	Ext.override(Ext.data.Store, {
+        startAutoRefresh : function(interval, params, callback, refreshNow){
+            if(refreshNow){
+                this.load({params:params, callback:callback});
+            }
+            if(this.autoRefreshProcId){
+                clearInterval(this.autoRefreshProcId);
+            }
+            this.autoRefreshProcId = setInterval(this.load.createDelegate(this, [{params:params, callback:callback}]), interval*1000);
+        },
+        stopAutoRefresh : function(){
+            if(this.autoRefreshProcId){
+                clearInterval(this.autoRefreshProcId);
+            }
+        }
+    }); 
+//[5.5]		
+//set button tooltip dynamically		
+	Ext.Button.override({
+    	setTooltip: function(qtipText) {
+       	 	var btnEl = this.getEl().child(this.buttonSelector)
+       		 Ext.QuickTips.register({
+           	 	target: btnEl.id,
+            	text: qtipText
+        	});             
+    	}
+	});
+
+//[5.27]fix hideTrigger bug in fuking IE8	
+	Ext.form.TriggerField.override({
+    	afterRender : function(){
+        	Ext.form.TriggerField.superclass.afterRender.call(this);
+        	var y;
+        	if(Ext.isIE && !this.hideTrigger && this.el.getY() != (y = this.trigger.getY())){
+            	this.el.position();
+            	this.el.setY(y);
+        	}
+    	}
+	});
+//	[5.10]
+//  fix bug:[Ext.form.Radio check event only fires once ] 
+	Ext.override(Ext.form.Radio, {
+    onClick : function(){
+    	if(this.el.dom.checked != this.checked){
+    	    var els = this.el.up('form').select('input[name='+this.el.dom.name+']');
+    	    els.each(function(el){
+    	        if(el.dom.id == this.id){
+    	            this.setValue(true);
+    	        }else{
+    	            Ext.getCmp(el.dom.id).setValue(false);    	        
+    	        }
+    	    }, this);
+        }
+    }
+	});
+//	[5.30]fuck ext2.0 no config item:enableKeyEvents
+	Ext.override(Ext.form.TextField, {
+            fireKey : function(e) {
+                if(((Ext.isIE && e.type == 'keydown') || e.type == 'keypress') && e.isSpecialKey()) {
+                    this.fireEvent('specialkey', this, e);
+                }
+                else {
+                    this.fireEvent(e.type, this, e);
+                }
+            }
+          , initEvents : function() {
+//                this.el.on(Ext.isIE ? "keydown" : "keypress", this.fireKey,  this);
+                this.el.on("focus", this.onFocus,  this);
+                this.el.on("blur", this.onBlur,  this);
+                this.el.on("keydown", this.fireKey, this);
+                this.el.on("keypress", this.fireKey, this);
+                this.el.on("keyup", this.fireKey, this);
+        
+                // reference to original value for reset
+                this.originalValue = this.getValue();
+            }
+        });
+//[6.23]
+   Ext.override(Ext.form.ComboBox, {
+            fireKey : function(e) {
+                if(((Ext.isIE && e.type == 'keydown') || e.type == 'keypress') && e.isSpecialKey()) {
+                    this.fireEvent('specialkey', this, e);
+                }
+                else {
+                    this.fireEvent(e.type, this, e);
+                }
+            }
+          , initEvents : function() {
+//                this.el.on(Ext.isIE ? "keydown" : "keypress", this.fireKey,  this);
+                this.el.on("focus", this.onFocus,  this);
+                this.el.on("blur", this.onBlur,  this);
+                this.el.on("keydown", this.fireKey, this);
+                this.el.on("keypress", this.fireKey, this);
+                this.el.on("keyup", this.fireKey, this);
+        
+                // reference to original value for reset
+                this.originalValue = this.getValue();
+            }
+        });
+// [5.30]fix【fireEvent('click') on buttons don't call handler function 】
+   Ext.extend(Ext.Button, {
+    	click : function() {
+        	if (!this.disabled) {
+            	if (this.enableToggle && (this.allowDepress !== false || !this.pressed)) {
+                	this.toggle();
+            	}
+            	if (this.menu && !this.menu.isVisible() && !this.ignoreNextClick) {
+                	this.showMenu();
+            	}
+            	this.fireEvent("click", this);
+            	if (this.handler) {
+                	this.handler.call(this.scope || this, this);
+           	 }
+        	}
+   	 	}
+	});
+//[6.2]fix	TextField and TextArea width issue in IE6
+	Ext.override(Ext.form.Field, {
+		adjustWidth : function(tag, w){
+			if(typeof w == 'number' && !this.normalWidth 
+				&& (Ext.isIE6 || !Ext.isStrict) 
+					&& /input|textarea/i.test(tag) 
+						&& !this.inEditor){
+				return w - 3;
+			}
+			return w;
+		}
+	});
+// 布局需要
+	Ext.override(Ext.layout.FormLayout, {
+				getAnchorViewSize : function(ct, target) {
+					return (ct.body || ct.el).getStyleSize();
+				}
+			});
+	Ext.apply({item:[]},{sdf:'sd'});
+//	
+	function red_must(_text){
+		return new Ext.form.TextField({
+				LabelWidth:0,
+				autoWidth:true,
+				labelSeparator:'',
+				hidden:true,
+				fieldLabel:'<font color="red" style="font-weight:bold">（'+_text+'）</font>'
+		});
+	}
+	function fillBlank(){
+		return new Ext.form.TextField({
+				LabelWidth:0,
+				autoWidth:false,
+				autoScroll:false,
+				labelSeparator:'',
+				hidden:true,
+				fieldLabel:'<font color="red" style="font-weight:bold"></font>'
+		});
+	}
+//	[7.3]node：单击的节点
+//	array：node的所有子孙节点都写入array
+	function recurTree(node,array){
+		array.push(node.id);
+		node.expand(true);
+		if(node.hasChildNodes()){
+			Ext.each(node.childNodes,function(child){
+				recurTree(child,array);
+			});
+		}
+	}

@@ -1,0 +1,135 @@
+﻿function tableShareApplication(){
+	var dbId = -1;
+	var orgId = -1;
+	var orgName = '';
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+		id:'-1',
+		text:'数据表',
+		expanded:true,
+		leaf:false
+	})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+		dataUrl:'/CoalMine/servlet/DataBaseServlet',
+		baseParams:{
+			action:'getDataBaseOfOtherOrgLeftTree'
+		}
+	})
+	var leftTreePanel = new Ext.tree.TreePanel({
+		root:leftTreeRoot,
+		loader:leftTreeLoad,
+		autoScroll:true,
+		region:'west',
+		layout:'fit',
+		title:'数据库列表',
+		id:'TreePanel_id',
+	    split : true,
+		width : 240,
+		minSize : 175,
+		maxSize : 400,
+		collapsible : true
+	})
+	leftTreePanel.on('click',function(node){
+	    if(node.isLeaf()){
+	    	dbId = node.id.split('_')[1];
+	    	orgId = node.parentNode.id;
+	    	orgName = node.parentNode.text;
+	    	store_TvBydbId.baseParams.dbId = dbId;
+	    	store_TvBydbId.baseParams.orgId = orgId;
+	    	store_TvBydbId.baseParams.orgName = orgName;
+	    	store_TvBydbId.load();
+	    }
+	})
+	var store_TvBydbId = new Ext.data.Store({
+		reader : new Ext.data.JsonReader({root:'rows'},
+                 [{name : "dbId"},
+                  {name : "dbName"},
+                  {name : "dbDisplayName"},
+                  {name :"orgId"},
+                  {name :"orgName"},
+                  {name :"tableId"},
+                  {name :"tableName"},
+                  {name :"tableChinaName"},
+                  {name :"tableForOtherName"},
+                  {name :"keywords"},
+                  {name :"description"}]),
+		proxy : new Ext.data.HttpProxy({
+				url : '/CoalMine/servlet/DataTableServlet'
+		}),
+		baseParams : {
+			action : 'getDataTableListNotShareBydbId',
+			dbId : dbId,
+			orgId:orgId,
+			orgName:orgName
+		}
+	})
+	var csm_existTable = new Ext.grid.CheckboxSelectionModel({singleSelect : false});
+	var grid_TvList = new Ext.grid.EditorGridPanel({
+			autoWidth:true,
+			store:store_TvBydbId,
+			title:'已有数据表',
+			clicksToEdit:1,
+			buttonAlign:'center',
+			sm:csm_existTable,
+			tbar:[{text:'申请',handler:function(){
+				if(grid_TvList.getSelectionModel().hasSelection()){
+					var tmpString = dbId+"#";
+					var tmp = '';
+					var selItems = grid_TvList.getSelectionModel().getSelections();
+					Ext.each(selItems,function(record){
+						tmp+=record.data.tableId+",";
+					})
+					if(tmp!='')
+					   tmp = tmp.substring(0,tmp.length-1);
+					tmpString+=tmp;
+					Ext.Ajax.request({
+						url : '/CoalMine/servlet/DataTableServlet',
+						params : {
+							action : 'tableShareApplication',
+							tmpString : tmpString
+						},
+						success : function(response,request) {
+							var res = Ext.util.JSON.decode(response.responseText);
+							if(res.success == true)
+								Ext.Msg.show({
+									title : '提示',
+									msg : '操作成功!',
+									buttons : Ext.Msg.OK
+								})
+							else
+								Ext.Msg.show({
+									title : '提示',
+									msg : '操作失败!',
+									buttons : Ext.Msg.OK
+								})
+						}
+					})
+				}
+			}}],
+			columns:[
+			     csm_existTable,
+			    {header:'所属部门',width:180,dataIndex:'orgName'},
+			    {header:'数据库名称',width:180,dataIndex:'dbDisplayName'},
+				{header:'数据表名称',width:180,dataIndex:'tableForOtherName'},
+				{header:'关键词',width:180,dataIndex:'keywords'},
+				{header:'数据表描述',width:180,dataIndex:'description'}
+			]
+	})
+	var newTablePanel = new Ext.form.FormPanel({
+		title:'新数据表申请',
+		items:[]
+	})
+	var tabPanel = new Ext.TabPanel({
+			id : 'disposeDsTab_id',
+			region : 'center',
+			activeTab : 0,
+		    bodyStyle : 'position:relative',
+			enableTabScroll : true,
+			items : [grid_TvList]
+		})
+	var vp = new Ext.Viewport({
+		id:'ViewPort_Id',
+		layout:'border',
+		items:[leftTreePanel,tabPanel]
+	})
+}
+Ext.onReady(tableShareApplication);

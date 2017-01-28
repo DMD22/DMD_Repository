@@ -1,0 +1,93 @@
+function basicStoreDecode(store){	
+		if(false == Ext.isEmpty(store.encodeFields)){//可以自定义encodeFields配置项
+			store.each(function(record){
+    			for(var _idx = 0,_len = store.encodeFields.length;_idx < _len; _idx++){
+    				var _field = store.encodeFields[_idx];
+    				record.set(_field,unescape(record.get(_field)));
+    				record.commit();
+    			}
+    		});		
+		}	
+		else{
+			store.each(function(record){
+    			for(var _idx = 0,_len = store.fields.length;_idx < _len; _idx++){
+    				var _field = store.fields.itemAt(_idx);
+    				record.set(_field.name,unescape(record.get(_field.name)));
+    				record.commit();
+    			}
+    		});	
+		}
+	}
+	
+	function decodeStore(store){
+		store.on('load',function(ds,records){
+			if(records.length > 0){
+				basicStoreDecode(ds);
+			}
+		});
+		
+	}
+	
+	function decodeStoreArray(arrayStore){
+		Ext.each(arrayStore,function(store){
+			decodeStore(store);
+		});
+	}
+//[7.9]树形结构的解码
+	function basicTreeDecode(node){	
+		if(false == Ext.isEmpty(node)){
+			node.setText(unescape(node.text));
+
+			if(node.hasChildNodes()){
+				node.expand(false);
+				Ext.each(node.childNodes,function(child){
+					basicTreeDecode(child);
+				});
+			}	
+		}
+	}
+	//处理主要从tree的根节点
+	function decodeTree(tree){
+		tree.getLoader().on('load',function(loader,root){
+			Ext.each(root.childNodes,function(node){
+					basicTreeDecode(node);
+//					node.collapse(true);//[7.24]
+				});
+			
+		});
+	}
+
+	function decodeTreeArray(arrayTree){
+		Ext.each(arrayTree,function(tree){
+			decodeTree(tree);			
+		});
+	}
+//[7.10]Ext.Ajax返回的对象的解码{success:true,userName:'aa',department:'fdfd'}
+//有个问题就是不加string那个判断。boolean\number什么的都成string了！	
+	function decodeResponse(objResponse){
+		for(field in objResponse){
+			if('object' == typeof objResponse[field])
+				decodeResponse(objResponse[field]);		
+			else
+				if('string' == typeof objResponse[field])
+					objResponse[field] = unescape(objResponse[field]);
+		}
+	}
+	/////////////////////ajf
+	//对于在comboBox基础上扩展的树形结构进行解码处理
+	function treeDecode_ecs(tree){
+		tree.on('load', function(node){
+				nodeCircle(node);
+		}); 
+	}
+	function nodeCircle(node){
+		//不对根节点进行解码处理，因为根节点是页面生成的
+		if(node.id != 'root'){
+			node.text = unescape(node.text);
+		}
+		if(node.hasChildNodes()){
+			node.eachChild(function(child){
+				nodeCircle(child);
+			});
+		}
+	}

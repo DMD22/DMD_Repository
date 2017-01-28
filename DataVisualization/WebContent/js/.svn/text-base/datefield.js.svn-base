@@ -1,0 +1,159 @@
+
+Ext.namespace('Boat.UI');   
+  
+///带单位的文本框   
+Boat.UI.UnitField = Ext.extend(Ext.form.TextField,{   
+    /*单位说明文字*/  
+    unitText:'',        
+    onRender: function(ct, position){   
+        Boat.UI.UnitField.superclass.onRender.call(this, ct, position);   
+        this.unitEl = ct.createChild({tag:'span',html:this.unitText});   
+        this.unitEl.addClass('x-form-unit');   
+    },   
+       
+    alignErrorIcon : function(){   
+        this.errorIcon.alignTo(this.unitEl,'tl-tr',[2, 0]);   
+    }   
+});   
+Ext.reg('unitfield', Boat.UI.UnitField);
+//带验证号码格式的文本框   
+Boat.UI.UnitFieldNum = Ext.extend(Ext.form.TextField,{   
+    /*单位说明文字*/  
+    unitText:'',        
+    onRender: function(ct, position){   
+        Boat.UI.UnitField.superclass.onRender.call(this, ct, position);   
+        this.unitEl = ct.createChild({tag:'span',html:this.unitText});   
+        this.unitEl.addClass('x-form-unit');   
+    },    
+    alignErrorIcon : function(){   
+        this.errorIcon.alignTo(this.unitEl,'tl-tr',[2, 0]);   
+    },
+    regex:/(^[0-9]{3,4}\-[0-9]{3,8}$)|(^[0-9]{3,8}$)|(^\([0-9]{3,4}\)[0-9]{3,8}$)|(^13\d{9}$)|(^15[0-35-9]\d{8}$)|(^18[05-9]\d{8}$)/,
+    //regex:/(^(\d{2,4}[-_－—]?)?\d{3,8}([-_－—]?\d{3,8})?([-_－—]?\d{1,7})?$)|(^0?1[35]\d{9}$)/, 
+	//regex:/^(\d{2,4}[-_－—]?)?\d{3,8}([-_－—]?\d{3,8})?([-_－—]?\d{1,7})?$)|(^0?1[35]\d{9}$/, 
+	//regex:/((\d{11})|^((\d{7,8})|(\d{4}|\d{3})-(\d{7,8})|(\d{4}|\d{3})-(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1})|(\d{7,8})-(\d{4}|\d{3}|\d{2}|\d{1}))$)/,
+	regexText:'输入的电话号码不合法，支持手机号码、3-4位区号、7-8位直播号码、1－4位分机号'
+});   
+Ext.reg('unitfieldnum', Boat.UI.UnitFieldNum);  
+//带单位的时间控件扩展
+Boat.UI.UnitFieldDate = Ext.extend(Ext.form.TextField,{   
+    /*单位说明文字*/ 
+    unitText:'',        
+    onRender: function(ct, position){   
+        Boat.UI.UnitField.superclass.onRender.call(this, ct, position);   
+        this.unitEl = ct.createChild({tag:'span',html:this.unitText});   
+        this.unitEl.addClass('x-form-unit');   
+    },    
+    alignErrorIcon : function(){   
+        this.errorIcon.alignTo(this.unitEl,'tl-tr',[2, 0]);   
+    },
+	regex:/^(19|20)\d\d[-/.]((0[1-9])|(1[0-2]))[-/.](([0-2][1-9])|([1-2]0)|(3[0-1]))$/,
+	//regex:/^(19|20)\d\d[-/.]((0[1-9])|([1-9])|(1[0-2]))[-/.](([0-2][1-9])|([1-2]0)|(3[0-1])|([1-9])) (([0-1]\d)|([1-9])|(2[0-3]|(0))):(([0-5]\d)|([1-9])):(([0-5]\d)|([1-9]))$/,
+	regexText:'输入的时间不合法，请重新输入合法的yyyy-mm-dd日期格式,年从1900开始',
+	editable:true,
+	listeners: {'blur': function(combo){
+		var value= combo.getValue();
+		var regSecond = /^(19|20)\d\d[-/.]((0[1-9])|(1[0-2]))[-/.](([0-2][1-9])|([1-2]0)|(3[0-1])) (([0-1]\d)|(2[0-3]|(0))):(([0-5]\d))$/;//用户只需输入年月日时分，秒自动添加
+		//var regSecond = /^(19|20)\d\d[-/.]((0[1-9])|([1-9])|(1[0-2]))[-/.](([0-2][1-9])|([1-2]0)|(3[0-1])|([1-9])) (([0-1]\d)|([1-9])|(2[0-3]|(0))):(([0-5]\d)|([1-9]))$/;//用户只需输入年月日时分，秒自动添加
+		var r = value.match(regSecond);
+		if(r != null){
+			combo.setValue(value.concat(':00'));
+		}//if(r != null)
+		else{
+			var regMinute = /^(19|20)\d\d[-/.]((0[1-9])|(1[0-2]))[-/.](([0-2][1-9])|([1-2]0)|(3[0-1])) (([0-1]\d)|(2[0-3]|(0)))$/;////用户只需输入年月日时，分秒自动添加
+			//var regMinute = /^(19|20)\d\d[-/.]((0[1-9])|([1-9])|(1[0-2]))[-/.](([0-2][1-9])|([1-2]0)|(3[0-1])|([1-9])) (([0-1]\d)|([1-9])|(2[0-3]|(0)))$/;////用户只需输入年月日时，分秒自动添加
+			var rr = value.match(regMinute);
+			if(rr != null){
+				combo.setValue(value.concat(':00:00'));
+			}
+		}//else
+		}//blur
+	}//listeners			
+});   
+Ext.reg('unitfielddate', Boat.UI.UnitFieldDate);  
+///带单位的多行文本框   
+Boat.UI.UnitTextArea = Ext.extend(Ext.form.TextArea,{   
+    /*单位说明文字*/  
+    unitText:'',        
+    onRender: function(ct, position){   
+        Boat.UI.UnitTextArea.superclass.onRender.call(this, ct, position);   
+        this.unitEl = ct.createChild({tag:'span',html:this.unitText});   
+        this.unitEl.addClass('x-form-unit');   
+    },   
+       
+    alignErrorIcon : function(){   
+        this.errorIcon.alignTo(this.unitEl,'tl-tr',[2, 0]);   
+    }   
+});   
+Ext.reg('unittextarea', Boat.UI.UnitTextArea);  
+
+///带注释的日期选择框   
+Boat.UI.UnitDateField = Ext.extend(Ext.form.DateField,{   
+    /*单位说明文字*/  
+    unitText:'',   
+    onRender: function(ct, position){   
+        Boat.UI.UnitDateField.superclass.onRender.call(this, ct, position);   
+        this.unitEl = ct.createChild({tag:'span',html:this.unitText});   
+        this.unitEl.addClass('x-form-unit');   
+    },          
+    alignErrorIcon : function(){   
+        this.errorIcon.alignTo(this.unitEl,'tl-tr',[2, 0]);   
+    }   
+});   
+Ext.reg('unitdatefield', Boat.UI.UnitDateField); 
+///带注释的时间选择框   
+Boat.UI.UnitTimeField = Ext.extend(Ext.form.TimeField,{   
+    /*单位说明文字*/  
+    unitText:'',   
+    onRender: function(ct, position){  
+        Boat.UI.UnitTimeField.superclass.onRender.call(this, ct, position);   
+        this.unitEl = ct.createChild({tag:'span',html:this.unitText});   
+        this.unitEl.addClass('x-form-unit');   
+    },          
+    alignErrorIcon : function(){   
+        this.errorIcon.alignTo(this.unitEl,'tl-tr',[2, 0]);   
+    }   
+});   
+Ext.reg('unittimefield', Boat.UI.UnitTimeField);  
+
+///带注释的combo选择框   
+Boat.UI.UnitComboField = Ext.extend(Ext.form.ComboBox,{   
+    /*单位说明文字*/  
+    unitText:'',   
+    onRender: function(ct, position){   
+        Boat.UI.UnitComboField.superclass.onRender.call(this, ct, position);   
+        this.unitEl = ct.createChild({tag:'span',html:this.unitText});   
+        this.unitEl.addClass('x-form-unit');   
+    },          
+    alignErrorIcon : function(){   
+        this.errorIcon.alignTo(this.unitEl,'tl-tr',[2, 0]);   
+    }   
+});   
+Ext.reg('unitcombofield', Boat.UI.UnitComboField); 
+///验证码文本框   
+Boat.UI.CodeField = Ext.extend(Ext.form.TextField,{   
+    /*获取验证码图片的后台Url*/  
+    codeUrl:Ext.BLANK_IMAGE_URL,   
+       
+    /*是否自动加载验证码图片*/  
+    autoLoad:true,   
+       
+    onRender: function(ct, position){   
+        Boat.UI.CodeField.superclass.onRender.call(this, ct, position);   
+        this.codeEl = ct.createChild({tag:'img',src:Ext.BLANK_IMAGE_URL});   
+        this.codeEl.addClass('x-form-code');   
+        this.codeEl.on('click',this.loadCodeImg,this);   
+           
+        if(this.autoLoad) this.loadCodeImg();   
+    },   
+  
+    alignErrorIcon : function(){   
+        this.errorIcon.alignTo(this.codeEl,'tl-tr',[2, 0]);   
+    },   
+       
+    /*加载验证码图片方法，加上随机数参数让图片刷新*/  
+    loadCodeImg: function(){   
+        this.codeEl.set({src:this.codeUrl+'?id='+Math.random()});   
+    }   
+});   
+Ext.reg('codefield', Boat.UI.CodeField);  

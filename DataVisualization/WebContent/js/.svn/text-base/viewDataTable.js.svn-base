@@ -1,0 +1,239 @@
+﻿function viewDataTable(){
+	var dbId = -1;
+	var tableName = '';
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+		id:'-1',
+		text:'数据表',
+		expanded:true,
+		leaf:false
+	})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+		dataUrl:'/CoalMine/servlet/DataTableServlet',
+		baseParams:{
+			action:'getDataTableLeftTree'
+		}
+	})
+	var leftTreePanel = new Ext.tree.TreePanel({
+		root:leftTreeRoot,
+		loader:leftTreeLoad,
+		region:'west',
+		layout:'fit',
+		autoScroll:true,
+		title:'数据表元数据查看',
+		id:'TreePanel_id',
+	    split : true,
+		width : 240,
+		minSize : 175,
+		maxSize : 400,
+		collapsible : true
+	})
+	leftTreePanel.on('click',function(node){
+		if(node.isLeaf()){
+			dbId = node.parentNode.id.substring(9,node.parentNode.id.length);
+			tableName = node.text;
+			Ext.Ajax.request({
+				url : '/CoalMine/servlet/DataTableServlet',
+			    params : {
+				   action : 'getDataTableInfo',
+				   dbId:dbId,
+				   tableId:node.id.split("_")[2],
+				   tableName:tableName
+			    },
+			    success : function(response, request) {
+			    	var res = Ext.util.JSON.decode(response.responseText);
+			    	if(res.success==true){
+			    		///获取数据项
+//			    		ds_ItemList.load();
+			    		txt_TableName.setValue(res.tableName);
+		                txt_TableChinaName.setValue(res.tableChinaName);
+		                txt_TableNameForOther.setValue(res.tableForOthers);
+		                txt_databaseName.setValue(node.parentNode.text);
+		                txt_keyword.setValue(res.keywords);
+		                txt_TableDescription.setValue(res.description);
+		                if(res.isopen==true){
+		                	Ext.getCmp("is_open").setValue(true);
+		                	Ext.getCmp("is_noopen").setValue(false);
+		                }else{
+		                	Ext.getCmp("is_open").setValue(false);
+		                	Ext.getCmp("is_noopen").setValue(true);
+		                }
+			    	}
+			    }
+			})
+		}
+	})
+	var store_words = new Ext.data.SimpleStore({
+		fields:['id','txt'],
+		data:[[1,'oracle数据库驱动'],[2,'sql数据库驱动'],[3,'mysql数据库驱动'],[4,'db2数据库驱动']]
+	})
+	var txt_TableName = new Ext.form.TextField({
+		fieldLabel:'数据表名',
+		anchor:'80%'
+	});
+	var txt_TableChinaName = new Ext.form.TextField({
+		fieldLabel:'数据表中文名',
+		anchor:'80%'
+	});
+	var txt_TableNameForOther = new Ext.form.TextField({
+		fieldLabel:'对外显示名',
+		anchor:'80%'
+	});
+	var txt_databaseName = new Ext.form.TextField({
+		fieldLabel:'所在数据库名',
+		anchor:'80%'
+	});
+	var txt_keyword = new Ext.form.TextField({
+		fieldLabel:'关键词',
+		anchor:'80%'
+	});
+	var txt_TableDescription = new Ext.form.TextArea({
+		fieldLabel:'数据表描述',
+		anchor:'80%'
+	});
+	var fs_description = new Ext.form.FieldSet({
+		layout:'form',
+		border:false,
+		frame:false,
+	    fitToFrame:true,
+		items:[{ 
+            xtype:'panel', 
+            layout:'column', 
+            border:false, 
+            frame:false,
+	        fitToFrame:true,
+            fieldLabel:'是否开放', 
+            defaults:{ 
+                layout:'form', 
+                border:false, 
+                frame:false,
+	            fitToFrame:true,
+                columnWidth:.2 
+            }, 
+            items:[{ 
+                labelSeparator:'：', 
+                items:{ 
+                   xtype:'radio', 
+                   id:'is_open',
+                   checked:'true',
+                   name:'isopen', 
+                   boxLabel:'是' 
+                } 
+            },{ 
+               items:{ 
+               xtype:'radio', 
+               id:'is_noopen',
+               name:'isopen', 
+               hideLabel:true, 
+               boxLabel:'否' 
+               } 
+            }] 
+      }] 
+	})
+	////////////////////////////////选择主键
+//	var ds_ItemList = new Ext.data.Store({
+//		reader : new Ext.data.JsonReader({root : 'rows'}, [{name : "id"}, {name : "text"}]),
+//		proxy : new Ext.data.HttpProxy({
+//				url : '/CoalMine/servlet/DataItemServlet'
+//		}),
+//		baseParams : {
+//			action : 'getDataItemInfoToKey',
+//			dbId:dbId,
+//			tableName:tableName
+//		}
+//	})
+//	var ms_itemList=new Ext.form.MultiSelect({
+//        store:ds_ItemList,
+//        autoScroll:true,//[7.21]
+//        height:180
+//    });
+//    var ds_selectItemList = new Ext.data.SimpleStore({
+//		fields:['id','txt'],
+//		data:[]
+//	})
+//	var ms_selectedItemList = new Ext.form.MultiSelect({
+//        store:ds_selectItemList,
+//        autoScroll:true,//[7.21]
+//        height:180
+//    });
+//    var fs_selectKeyItem = new Ext.form.FieldSet({
+//    	title:'主键选择',
+//    	layout:'form',
+//    	xtype : 'container',
+//		autoEl : {},
+//    	items : [{
+//			layout : 'column',
+//			border : false,
+//			items : [{
+//				xtype : 'container',
+//				autoEl : {},
+//				border : false,
+//				columnWidth : 0.4,
+//				layout : 'fit',
+//				items : ms_itemList
+//				}, {
+//				xtype : 'container',
+//				autoEl : {},
+//				border : false,
+//				columnWidth : .12,
+//				layout : 'form',
+//				items : [{}, {
+//					xtype : 'button',
+//					text : '=>',
+//					tooltip : '添加主键'
+//					}, {}, {
+//					xtype : 'button',
+//					text : '<=',
+//					tooltip : '移除主键'
+//				}, {}]
+//				}, {
+//				xtype : 'container',
+//				autoEl : {},
+//				border : false,
+//				columnWidth : 0.4,
+//				layout : 'fit',
+//				items : ms_selectedItemList
+//			}]
+//		}]
+//    })
+//    var ds_keyItem = new Ext.data.Store({
+//    	reader : new Ext.data.JsonReader({root : 'rows'}, [{name : "id"}, {name : "text"}]),
+//		proxy : new Ext.data.HttpProxy({
+//				url : '/CoalMine/servlet/DataItemServlet'
+//		}),
+//		baseParams : {
+//			action : 'getKeyItem',
+//			dbId:dbId,
+//			tableName:tableName
+//		}
+//    })
+	///////////////////////////////////////
+	var fs_basicInfo = new Ext.form.FieldSet({
+		autoHeight : true,
+	    autoWidth : true,//[10.14]不会出现宽度太小，控件消失的问题
+	    frame:false,
+	    fitToFrame:true,
+	    split:true,
+	    bodyStyle: 'position:relative',
+	    style:'padding:10px 10px 10px 10px',
+	    width:'95%',
+	    layout : 'form',
+	    border:false,
+		items:[txt_TableName,txt_TableChinaName,
+		txt_TableNameForOther,txt_databaseName,txt_keyword,
+		txt_TableDescription,fs_description]
+	})
+	var rightPanel = new Ext.form.FormPanel({
+		region:'center',
+		layout:'form',
+		buttonAlign:'center',
+		items:[txt_TableName,txt_TableChinaName,
+		txt_TableNameForOther,txt_databaseName,txt_keyword,
+		txt_TableDescription,fs_description]
+	})
+	var vp = new Ext.Viewport({
+		id:'ViewPort_Id',
+		layout:'border',
+		items:[leftTreePanel,rightPanel]
+	})
+}
+Ext.onReady(viewDataTable);

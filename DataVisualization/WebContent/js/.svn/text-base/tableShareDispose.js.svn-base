@@ -1,0 +1,274 @@
+﻿function tableShareDispose(){
+	var tableId = -1;
+	var tableName = '';
+	var orgId = -1;
+	var orgName = '';
+	var dbId = -1;
+	var leftTreeRoot = new Ext.tree.AsyncTreeNode({
+		id:'-1',
+		text:'数据库',
+		expanded:true,
+		leaf:false
+	})
+	var leftTreeLoad = new Ext.tree.TreeLoader({
+		dataUrl:'/CoalMine/servlet/DataBaseServlet',
+		baseParams:{
+			action:'getDataBaseLeftTree'
+		}
+	})
+	var leftTreePanel = new Ext.tree.TreePanel({
+		root:leftTreeRoot,
+		loader:leftTreeLoad,
+		region:'west',
+		layout:'fit',
+		title:'数据表共享配置',
+		id:'TreePanel_id',
+	    split : true,
+		width : 240,
+		minSize : 175,
+		maxSize : 400,
+		collapsible : true
+	})
+	leftTreePanel.on('click',function(node){
+		dbId = node.id;
+		Ext.Ajax.request({
+		   url:'/CoalMine/servlet/DataTableServlet',
+		   params:{
+			  action:'createTableShareTable',
+			  dbId:dbId
+		   },
+		   success:function(){}
+	   })
+		store_selectTv.baseParams.dbId = dbId;
+		store_selectTv.load();
+		comb_selectTv.clearValue();
+		grid_disposeDataSource.getStore().removeAll();
+		store_selectOrg.load();
+		comb_selectOrg.clearValue();
+		grid_disposeDsByOrg.getStore().removeAll();
+	})
+	var store_disposeDataSource = new Ext.data.SimpleStore({
+				fields:['id','txt'],
+				data:[[1,'oracle数据库驱动'],[2,'sql数据库驱动'],[3,'mysql数据库驱动'],[4,'db2数据库驱动']]
+			})
+	var store_disposeDsByOrg = new Ext.data.SimpleStore({
+				fields:['id','txt'],
+				data:[[1,'oracle数据库驱动'],[2,'sql数据库驱动'],[3,'mysql数据库驱动'],[4,'db2数据库驱动']]
+			})
+	var store_selectTv = new Ext.data.Store({
+		proxy:new Ext.data.HttpProxy({url:'/CoalMine/servlet/DataTableServlet'}),
+		baseParams:{
+		   action:'getDataTableList',
+		   dbId:dbId
+		},
+	    reader:new Ext.data.JsonReader(
+			{root:'rows'},
+			[{name:"id"},{name:"tableName"},{name:"ChinaName"}]
+		)
+	})
+	var comb_selectTv = new Ext.form.ComboBox({
+		id:'id_selectTv',
+		width:160,
+		store:store_selectTv,
+		valueField:'id',
+		displayField:'ChinaName',
+		triggerAction:'all',
+		mode:'local',
+		editable:false
+	})
+	comb_selectTv.on('select',function(comb,record,index){
+		tableId = record.data.id;
+		tableName = record.data.ChinaName;
+		store_tableDisposeInfo.baseParams.dbId = dbId;
+		store_tableDisposeInfo.baseParams.tableId = tableId;
+		store_tableDisposeInfo.baseParams.tableName = tableName;
+		store_tableDisposeInfo.load();
+	})
+	var store_tableDisposeInfo = new Ext.data.Store({
+		proxy:new Ext.data.HttpProxy({url:'/CoalMine/servlet/DataTableServlet'}),
+		baseParams:{
+		   action:'getTableShareInfo',
+		   dbId:dbId,
+		   tableId:tableId,
+		   tableName:tableName
+		},
+	    reader:new Ext.data.JsonReader(
+			{root:'rows'},
+			[{name:"recordId"},{name:"dbId"},{name:"dbName"},
+			 {name:"tableId"},{name:"tableName"},{name:"orgId"},{name:"orgName"},{name:"share"}]
+		)
+	})
+	this.checkBox = new Ext.ux.grid.CheckColumn({
+    		id:'sun_cc',
+     		header: '是否共享',
+     		dataIndex: 'share',
+     		readOnly:false,
+     		width: 60
+     });
+	var grid_disposeDataSource = new Ext.grid.EditorGridPanel({
+		store:store_tableDisposeInfo,
+		autoWidth:true,
+		title:'根据数据表配置',
+		clicksToEdit:1,
+		id:'id_grid_1',
+		buttonAlign:'center',
+		plugins: [this.checkBox],
+		tbar:['表格:',comb_selectTv],
+		columns:[
+			{header:'数据库名称',width:160,dataIndex:'dbName'},
+			{header:'表格名称',width:160,dataIndex:'tableName'},
+			{header:'部门名称',width:160,dataIndex:'orgName'},
+			this.checkBox
+		],
+		buttons:[{text:'确定',handler:function(){
+			var tableDisposeInfo = dbId+"#"+tableId+"#";
+			var tmp = '';
+			store_tableDisposeInfo.each(function(item){
+				if(item.data.share==true){
+					tmp+=item.data.orgId+","
+				}
+			})
+			if(tmp!='')
+			   tmp = tmp.substring(0,tmp.length-1);
+			tableDisposeInfo+=tmp;
+			Ext.Ajax.request({
+				url:'/CoalMine/servlet/DataTableServlet',
+				method:'POST',
+				params:{
+					action:'tableDisposeByTable',
+					tableDisposeInfo:tableDisposeInfo
+				},
+				success:function(response,request){
+				    var res = Ext.util.JSON.decode(response.responseText);
+					if (res.success == true){
+						Ext.Msg.show({
+							title : '提示',
+							msg : '配置成功!',
+							buttons : Ext.Msg.OK
+						});
+					}else
+						Ext.Msg.show({
+							title : '提示',
+							msg : '配置失败!',
+							buttons : Ext.Msg.OK
+						})
+				}
+			})
+		}},{text:'取消'}]					
+		})
+	
+     var store_selectOrg = new Ext.data.Store({
+		proxy:new Ext.data.HttpProxy({url:'/CoalMine/servlet/OrgOperationServlet'}),
+		baseParams:{
+		   action:'getOrgList'
+		},
+	    reader:new Ext.data.JsonReader(
+			{root:'rows'},
+			[{name:"id"},{name:"name"}]
+		)
+	})
+	var comb_selectOrg = new Ext.form.ComboBox({
+		id:'id_selectOrg',
+		width:160,
+		store:store_selectOrg,
+		valueField:'id',
+		displayField:'name',
+		triggerAction:'all',
+		mode:'local',
+		editable:false
+	})
+	comb_selectOrg.on('select',function(comb,record,index){
+		orgId = record.data.id;
+		orgName = record.data.name;
+		store_disposeDsByOrg.baseParams.dbId = dbId;
+		store_disposeDsByOrg.baseParams.orgId = orgId;
+		store_disposeDsByOrg.baseParams.orgName = orgName;
+		store_disposeDsByOrg.load();
+	})
+	var store_disposeDsByOrg = new Ext.data.Store({
+		proxy:new Ext.data.HttpProxy({url:'/CoalMine/servlet/OrgOperationServlet'}),
+		baseParams:{
+		   action:'getTableShareInfoByOrg',
+		   dbId:dbId,
+		   orgId:orgId,
+		   orgName:orgName
+		},
+	    reader:new Ext.data.JsonReader(
+			{root:'rows'},
+			[{name:"recordId"},{name:"dbId"},{name:"dbName"},
+			 {name:"tableId"},{name:"tableName"},{name:"orgId"},{name:"orgName"},{name:"share"}]
+		)
+	})
+	this.checkBoxByOrg = new Ext.ux.grid.CheckColumn({
+    		id:'sun_cb',
+     		header: '是否共享',
+     		dataIndex: 'share',
+     		readOnly:false,
+     		width: 60
+     });
+	var grid_disposeDsByOrg = new Ext.grid.EditorGridPanel({
+		autoWidth:true,
+		title:'根据部门配置',
+		store:store_disposeDsByOrg,
+		plugins: [this.checkBoxByOrg],
+		tbar:['组织部门:',comb_selectOrg],
+		buttonAlign:'center',
+		id:'id_grid_2',
+		clicksToEdit:1,
+        columns:[
+			{header:'数据库名称',width:160,dataIndex:'dbName'},
+			{header:'部门名称',width:160,dataIndex:'orgName'},
+			{header:'表格名称',width:160,dataIndex:'tableName'},
+			this.checkBoxByOrg
+		],
+		buttons:[{text:'确定',handler:function(){
+			var tableDisposeInfo = dbId+"#"+orgId+"#";
+			var tmp = '';
+			store_disposeDsByOrg.each(function(item){
+				if(item.data.share==true){
+					tmp+=item.data.tableId+","
+				}
+			})
+			if(tmp!='')
+			   tmp = tmp.substring(0,tmp.length-1);
+			tableDisposeInfo+=tmp;
+			Ext.Ajax.request({
+				url:'/CoalMine/servlet/OrgOperationServlet',
+				method:'POST',
+				params:{
+					action:'tableDisposeByOrg',
+					tableDisposeInfo:tableDisposeInfo
+				},
+				success:function(response,request){
+				    var res = Ext.util.JSON.decode(response.responseText);
+					if (res.success == true){
+						Ext.Msg.show({
+							title : '提示',
+							msg : '配置成功!',
+							buttons : Ext.Msg.OK
+						});
+					}else
+						Ext.Msg.show({
+							title : '提示',
+							msg : '配置失败!',
+							buttons : Ext.Msg.OK
+						})
+				}
+			})
+		}},{text:'取消'}]
+	})
+	     var tab_disposeDs = new Ext.TabPanel({
+			id : 'disposeDsTab_id',
+			region : 'center',
+			activeTab : 0,
+		    bodyStyle : 'position:relative',
+			enableTabScroll : true,
+			items : [grid_disposeDataSource,grid_disposeDsByOrg]
+		})
+	var vp = new Ext.Viewport({
+		id:'ViewPort_Id',
+		layout:'border',
+		items:[leftTreePanel,tab_disposeDs]
+	})
+}
+Ext.onReady(tableShareDispose);

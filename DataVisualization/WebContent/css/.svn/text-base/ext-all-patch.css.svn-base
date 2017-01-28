@@ -1,0 +1,27 @@
+﻿/* 修正默认样式表在firefox下字体偏小的问题 */
+.x-window-footer {position: relative;top: 0;right: 0;}
+.x-tab-strip SPAN.x-tab-strip-text {font-size: 12px;}
+.x-panel-header {font-size: 12px;}
+.x-tree-node {font-size: 12px;}
+.x-grid3-hd-row TD {font-size: 12px;}
+.x-grid3-row TD {font-size: 12px;LINE-HEIGHT: 16px;}
+.x-tip .x-tip-bd {font-size: 12px;}
+.x-tip h3{font-size: 12px;}
+.x-tip .x-tip-bd-inner{font-size:12px;}
+.x-panel-tl .x-panel-header {FONT: normal 12px tahoma,arial,verdana,sans-serif;}
+.x-form-field {FONT: 12px tahoma,arial,helvetica,sans-serif}
+.x-small-editor .x-form-field {FONT: 12px tahoma,arial,helvetica,sans-serif}
+.x-combo-list-item {FONT: 12px tahoma,arial,helvetica,sans-serif;}
+.x-menu-list-item {FONT: 12px tahoma,arial,sans-serif;}
+.x-window-tl .x-window-header {FONT: bold 12px tahoma,arial,verdana,sans-serif;}
+.ext-ie .x-form-text {margin-top:1px;} /* the textField missing bottom line */
+.x-form-item {FONT: 12px tahoma,arial,helvetica,sans-serif}
+.x-grid-group-hd DIV {FONT: bold 12px tahoma,arial,helvetica,sans-serif;}
+.x-btn button{font-size:12px;}
+
+/*修正IE7下menu icon的错误问题*/
+.x-menu-item-icon {border: 0 none;height: 16px;padding: 0;vertical-align: top;width: 16px;margin: 0 8px 0 0;}
+.x-menu a.x-menu-item {padding:3px 21px 3px 3px;}
+
+/*修正日期组件在firefox下显示问题*/
+.x-date-picker{border:1px solid #1b376c;border-top:0 none;background:#fff;position:relative;width:10px;}

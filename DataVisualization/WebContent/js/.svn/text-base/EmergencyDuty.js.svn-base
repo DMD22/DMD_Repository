@@ -1,0 +1,3836 @@
+
+Ext.SSL_SECURE_URL = '../script/extjs2/images/default/s.gif';
+Ext.BLANK_IMAGE_URL = '../script/extjs2/images/default/s.gif';
+ // 关于刷新
+	var record_start=0;
+	var record_start_ds = 0;
+    	var record_start_duty = 0;
+	function myInterval(funcName, time) {
+		var args = [];
+		for (var i = 2; i < arguments.length; i++) {
+			args.push(arguments[i]);
+		}
+		return window.setInterval(function() {
+					funcName.apply(this, args);
+				}, time);
+	};
+
+	// casedepartmentlist的定时刷新
+	intervalIDUpdate = myInterval(refreshGrid, 60000);// 1min 刷新一次
+	function refreshGrid() {
+		Ext.getCmp('pt_paging').doLoad(record_start);
+		Ext.getCmp('pt_paging_ds').doLoad(record_start_ds);
+		Ext.getCmp('pt_paging_duty').doLoad(record_start_duty);
+	}
+// 数据定义
+//事件状态
+    var ds_caseState = new Ext.data.SimpleStore({
+    	scope: 'prototype',
+        fields: [{name: 'id'},{name: 'state'}],
+        data: [[-1, '全部'], [0,'未处置'], [1,'处置中'],[2,'已处置'],[3,'已办结'],[4,'已接收']]
+    });
+
+    var ds_caseState_show = new Ext.data.SimpleStore({
+        fields: [{name: 'id'},{name: 'state'}],
+        data: [[0,'未处置'], [1,'处置中'],[2,'已办结']]
+    });
+    
+    var arrayEventID = [];//递归的记录事件类型ID    	   
+//伤亡人员信息定义
+    var ds_injuredLevel = new Ext.data.SimpleStore({
+    	scope: 'prototype',
+        fields: [{name: 'id'},{name: 'text'}],
+        data: [[0,'轻伤'],[1,'重伤'],[2,'死亡']]
+    });
+    var ds_injuredJob = new Ext.data.SimpleStore({
+        fields: [{name: 'id'},{name: 'text'}],
+        data: [[0,'运输工'],[1,'掘砌工'],[2,'支架工'],[3,'采煤工'],[4,'皮带司机']]
+    });
+    var ds_detailType = new Ext.data.SimpleStore({
+        fields: [{name: 'id'},{name: 'text'}],
+        data: [[0,'运输事故类'],[1,'顶板事故类'],[2,'机电事故类'],[3,'放炮事故类'],[4,'其他事故类']]
+    });
+    var ds_workTime = new Ext.data.SimpleStore({
+        fields: [{name: 'id'},{name: 'text'}],
+        data: [[0,'早班'],[1,'中班'],[2,'晚班']]
+    });
+    var ds_injuredNation = new Ext.data.Store({
+        reader: new Ext.data.JsonReader(
+            {root: 'rows', totalProperty: 'resultCount'},
+            [{name: "id", mapping: 'NationID'}
+             ,{name: "text",mapping: 'NationName'}
+            ]
+        ),
+        proxy: new Ext.data.HttpProxy({ 
+        	url:'/CoalMine/servlet/NationServlet'
+        }),
+        baseParams:{
+        	action:'getAllNationality'
+        }
+    });
+
+// 事件列表
+    var ds_caseList = new Ext.data.Store({
+        reader: new Ext.data.JsonReader(
+            {root: 'rows', totalProperty: 'resultCount'},
+            [{name: "id", mapping: 'depCaseID'}
+             ,{name: "caseName"}
+             ,{name: "occureTime", mapping: 'occuranceTime'}
+             ,{name: "location", mapping: 'occurancePlace'}
+             ,{name: "reportTime"}
+             ,{name: "reportDepartment", mapping: 'reporterDepartment'}
+             ,{name: "reporter", mapping: 'personName'}
+             ,{name: "handleType"}
+             ,{name: "caseDescription"}
+             ,{name: "handleDescription"}
+             ,{name: "caseAttachment"}
+             ,{name: "caseState"}
+             ,{name: "handlePerson"}
+             ,{name: "telephone"}             //科室电话 
+             ,{name:"eventTypeID"}//
+        	 ,{name:"eventLevelID"}
+        	 ,{name:"eventTypeName"}
+        	 ,{name:"eventLevelName"}
+        	 ,{name: "caseAbout"}
+             ,{name: "caseCause"}             
+             ,{name:"caseReminder"}
+             ,{name: "caseInjured"}
+            ]
+        ),
+        proxy: new Ext.data.HttpProxy({ 
+        	url:'/CoalMine/servlet/CaseOperation'
+        }),
+        baseParams:{
+        	action:'getDepartmentCase'
+        }
+    });
+    
+    //自己处置或编辑的事件
+    var ds_MyCase = new Ext.data.Store({
+        reader: new Ext.data.JsonReader(
+            {root: 'rows', totalProperty: 'resultCount'},
+            [{name: "id", mapping: 'depCaseID'}
+             ,{name: "caseName"}
+             ,{name: "occureTime", mapping: 'occuranceTime'}
+             ,{name: "location", mapping: 'occurancePlace'}
+             ,{name: "reportTime"}
+             ,{name: "reportDepartment", mapping: 'reporterDepartment'}
+             ,{name: "reporter", mapping: 'personName'}
+             ,{name: "handleType"}
+             ,{name: "caseDescription"}
+             ,{name: "handleDescription"}
+             ,{name: "caseAttachment"}
+             ,{name: "caseState"}
+             ,{name: "handlePerson"}
+             ,{name: "telephone"}             //科室电话 
+             ,{name:"eventTypeID"}//
+        	 ,{name:"eventLevelID"}
+        	 ,{name:"eventTypeName"}
+        	 ,{name:"eventLevelName"}
+        	 ,{name: "caseAbout"}
+             ,{name: "caseCause"}             
+             ,{name:"caseReminder"}
+             ,{name: "caseInjured"}
+            ]
+        ),
+        proxy: new Ext.data.HttpProxy({ 
+        	url:'/CoalMine/servlet/CaseOperation'
+        }),
+        baseParams:{
+        	action:'getDepartmentCaseInfo'
+        }
+    });
+    
+    //危险源事件列表 
+	var ds_caseList_ds = new Ext.data.Store({
+        	reader:new Ext.data.JsonReader(
+        	
+        		{root:'rows',totalProperty: 'resultCount'},
+        		[{name: "id",mapping:'dsCaseID'}
+        		,{name:"caseName"}
+        		,{name:"reportTime"}
+        		,{name:"caseDangerSource",mapping: 'reportDangerSource'}
+        		,{name:"reporter",mapping:'personName'}
+        		,{name:"reporterPhone",mapping:'telephone'}
+        		,{name:"caseState"}
+        		,{name:"caseInjured"}
+        		,{name:"eventTypeID"}
+        	    ,{name:"eventLevelID"}
+        		,{name:"eventTypeName"}
+        		,{name:"eventLevelName"}
+        		,{name:"occureTime",mapping:'occuranceTime'}
+        		,{name:"location",mapping:'occurancePlace'}
+        		,{name: "handleType"}
+                ,{name: "caseDescription"}
+                ,{name: "caseAttachment"}
+                ,{name: "handlePerson"}
+                ,{name: "handleDescription"}
+                ,{name: "caseAbout"}
+                ,{name: "caseCause"}             
+                ,{name:"caseReminder"}
+        	 	]
+        		),
+			proxy:new Ext.data.HttpProxy({
+				url:'/CoalMine/servlet/CaseDangerSourceServlet'
+			}),
+			baseParams:{
+        	    action:'getDSCase'
+            }
+    });
+    
+    //自己处置或编辑的危险源事件
+    var ds_MyCase_ds = new Ext.data.Store({
+        	reader:new Ext.data.JsonReader(
+        	
+        		{root:'rows',totalProperty: 'resultCount'},
+        		[{name: "id",mapping:'dsCaseID'}
+        		,{name:"caseName"}
+        		,{name:"reportTime"}
+        		,{name:"caseDangerSource",mapping: 'reportDangerSource'}
+        		,{name:"reporter",mapping:'personName'}
+        		,{name:"reporterPhone",mapping:'telephone'}
+        		,{name:"caseState"}
+        		,{name:"caseInjured"}
+        		,{name:"eventTypeID"}
+        	    ,{name:"eventLevelID"}
+        		,{name:"eventTypeName"}
+        		,{name:"eventLevelName"}
+        		,{name:"occureTime",mapping:'occuranceTime'}
+        		,{name:"location",mapping:'occurancePlace'}
+        		,{name: "handleType"}
+                ,{name: "caseDescription"}
+                ,{name: "caseAttachment"}
+                ,{name: "handlePerson"}
+                ,{name: "handleDescription"}
+                ,{name: "caseAbout"}
+                ,{name: "caseCause"}             
+                ,{name:"caseReminder"}
+        	 	]
+        		),
+			proxy:new Ext.data.HttpProxy({
+				url:'/CoalMine/servlet/CaseOperation'
+			}),
+			baseParams:{
+        	    action:'getDSCaseInfo'
+            }
+    });
+    //接警重大案件列表 
+	var ds_caseList_duty = new Ext.data.Store({
+        	reader:new Ext.data.JsonReader(
+        	
+        		{root:'rows',totalProperty: 'resultCount'},
+        		[{name: "id",mapping:'drCaseID'}
+        		,{name:"caseName"}
+        		,{name:"reportTime"}
+        		,{name:"reporter",mapping:'personName'}
+        		,{name:"reporterPhone",mapping:'telephone'}
+        		,{name:"caseState"}
+        		,{name:"caseInjured"}
+        		,{name:"eventTypeID"}
+        	    ,{name:"eventLevelID"}
+        		,{name:"eventTypeName"}
+        		,{name:"eventLevelName"}
+        		,{name:"occureTime",mapping:'occuranceTime'}
+        		,{name:"location",mapping:'occurancePlace'}
+        		,{name: "handleType"}
+                ,{name: "caseDescription"}
+                ,{name: "caseAttachment"}
+                ,{name: "handlePerson"}
+                ,{name: "handleDescription"}
+                ,{name: "caseAbout"}
+                ,{name: "caseCause"}             
+                ,{name:"caseReminder"}
+        		]
+        		),
+			proxy:new Ext.data.HttpProxy({
+				url:'/CoalMine/servlet/CaseDutyRecieveServlet'
+			}),
+			baseParams:{
+        	    action:'getDutyCase'
+            }
+    });
+    
+    //应急值守处置或编辑的案件信息
+    var ds_MyCase_duty = new Ext.data.Store({
+        	reader:new Ext.data.JsonReader(
+        	
+        		{root:'rows',totalProperty: 'resultCount'},
+        		[{name: "id",mapping:'drCaseID'}
+        		,{name:"caseName"}
+        		,{name:"reportTime"}
+        		,{name:"reporter",mapping:'personName'}
+        		,{name:"reporterPhone",mapping:'telephone'}
+        		,{name:"caseState"}
+        		,{name:"caseInjured"}
+        		,{name:"eventTypeID"}
+        	    ,{name:"eventLevelID"}
+        		,{name:"eventTypeName"}
+        		,{name:"eventLevelName"}
+        		,{name:"occureTime",mapping:'occuranceTime'}
+        		,{name:"location",mapping:'occurancePlace'}
+        		,{name: "handleType"}
+                ,{name: "caseDescription"}
+                ,{name: "caseAttachment"}
+                ,{name: "handlePerson"}
+                ,{name: "handleDescription"}
+                ,{name: "caseAbout"}
+                ,{name: "caseCause"}             
+                ,{name:"caseReminder"}
+        		]
+        		),
+			proxy:new Ext.data.HttpProxy({
+				url:'/CoalMine/servlet/CaseOperation'
+			}),
+			baseParams:{
+        	    action:'getDutyCaseInfo'
+            }
+    });
+    //事件级别查询             
+    var ds_caseLevelList = new Ext.data.Store({
+        reader: new Ext.data.JsonReader(
+            {root: 'rows'},
+            [{name: "id",mapping: 'eventLevelID'}
+             ,{name: "level", mapping: 'eventLevelName'}
+            ]
+        ),
+        proxy: new Ext.data.HttpProxy({
+            url: '/CoalMine/servlet/CaseOperation'
+        }),
+        baseParams: {
+        	action: 'getAllEventLevel'
+        }
+    });
+    ds_caseLevelList.load();    
+    
+    //上报科室查询
+    var ds_department = new Ext.data.Store({
+        reader: new Ext.data.JsonReader(
+            {root: 'rows'},
+            [{name: "id", mapping: 'departmentID'}
+             ,{name: "department", mapping: 'depName'}
+            ]
+        ),
+        proxy: new Ext.data.HttpProxy({
+            url:'/CoalMine/servlet/DepartmentServlet'
+        }),
+        baseParams: {
+        	action: 'getAllDepartment'
+        }
+    });
+    ds_department.load();
+
+    //对处置或编辑之后的事件检查是否符合已有查询条件 type表示事件类型
+    
+    //////////////////////////////////////////////////////////
+    function EmergencyDuty(){
+    	/////////////////////////////////////////////////////
+    	var record_start = 0;
+    	var record_start_ds = 0;
+    	var record_start_duty = 0;
+        var rewindSelections = [];	//记录任务表中选中的任务ID.
+        var arrayEventText = [];//[7.5]递归的记录事件类型text
+        
+    	function buttonSetting(Buttons, isEnable, type){
+    		
+    	}
+    	
+    	////////////////////////////////////////////////////
+    	//事件查询
+    	
+    	var com_reportDepartment = new Ext.form.ComboBox({
+    	    fieldLabel: '上报科室'
+    	    ,hiddenName: 'h_department'
+    	    ,displayField: 'department'
+    	    ,valueField: 'department'
+    	    ,readOnly: true
+    	    ,editable: false
+    	    ,store: ds_department
+    	    ,triggerAction: 'all'
+    	    ,mode: 'local'
+    	    ,width: 190 
+    	});
+       
+        var time_reportFrom = new Boat.UI.UnitFieldDate({
+				id : 'time_from',
+				name: 'time_form',
+				fieldLabel : '上报时间',
+				width : 190
+		});
+	    time_reportFrom.on('focus', function() {
+				WdatePicker({
+					el : 'time_from',
+					dateFmt : 'yyyy-MM-dd HH:mm:ss',
+					onpicked : function() {
+					    time_reportFrom.clearInvalid();
+					},
+					maxDate:'#F{$dp.$D(\'time_to\')||\'%y-%M-%d %H:%m:%s\'}'
+			  });
+	    });
+
+        var time_reportTo = new Boat.UI.UnitFieldDate({
+				id : 'time_to',
+				name: 'time_to',
+				fieldLabel : '至',
+				width : 190
+			});
+	    time_reportTo.on('focus', function() {
+				WdatePicker({
+					el : 'time_to',
+					dateFmt : 'yyyy-MM-dd HH:mm:ss',
+					onpicked : function() {
+					    time_reportFrom.clearInvalid();
+					},
+					minDate : '#F{$dp.$D(\'time_from\')}',
+					maxDate : '#F{\'%y-%M-%d %H:%m:%s\'}'
+			  });
+	});txt_caseName = new Ext.form.TextField({
+    	    fieldLabel: '事件主题',
+    	    width: 190
+    	});
+    	var com_caseState = new Ext.form.ComboBox({
+//    		id: 'com_caseState_1',
+    	    fieldLabel: '事件状态'
+    	    ,hiddenName: 'h_state'
+    	    ,displayField: 'state'
+    	    ,valueField: 'id'
+    	    //,readOnly: true
+    	    ,editable: false
+    	    ,store: ds_caseState
+    	    ,triggerAction: 'all'
+    	    ,mode: 'local'
+    	    ,width: 190   	    
+    	});
+    	var com_eventLevel = new Ext.form.ComboBox({
+    	    fieldLabel: '事件级别'
+    	    ,hiddenName: 'h_level'
+    	    ,displayField: 'level'
+    	    ,valueField: 'id' 
+//    	    ,readOnly: true
+    	    ,editable: false
+    	    ,store: ds_caseLevelList
+    	    ,triggerAction: 'all'
+    	    ,mode: 'local'
+    	    ,width: 190
+    	});
+
+    	var typeLoader = new Ext.tree.TreeLoader({
+    	    url: '/CoalMine/servlet/ShowCaseTypeTreeServlet'
+    	    ,baseParams:{
+				action:'getCaseTypeTree'
+			}
+    	});
+
+    	var com_eventType = new Ext.ux.TreeCombo({
+		    expandAll:false,//是否在点击combox时将树全部展开
+		    fieldLabel:'事件类型',
+		    valueField: 'id',
+		    loader:typeLoader,
+		    editable:false,
+//		    readOnly:true,
+		    width:190	
+		    ,emptyText: '突发公共事件'
+	    });
+	    //	递归的获取所有子节点的ID
+	    com_eventType.getTree().on('click',function(node,event){
+		    arrayEventID.length = 0;//clear former ones
+		    recurTree(node,arrayEventID);
+		
+//		    arrayEventText.length = 0;//clear former ones
+//		    recurTree_text(node,arrayEventText);	
+	    });
+	    ////////////////////////////////////////////////////
+	    var fs_search = new Ext.form.FieldSet({
+	        anchor:'100% 30%'
+	        ,title: '事件查询'
+//	        ,autoHeight: true
+	        ,bodyStyle: 'position:relative'
+//	        ,width: '98%'
+	        ,layout: 'column'
+	        ,border: false
+	        ,items: [{
+	        	columnWidth : 0.3,
+				border:false,
+				labelAlign:'right',
+				layout : 'form',
+				items : [txt_caseName,time_reportFrom,com_eventType]
+	        },{
+				columnWidth : 0.04,
+				border : false,
+				labelAlign:'right',
+				layout : 'form',
+				defaultType : 'hidden'
+			},{
+	        	columnWidth : 0.3,
+				labelAlign:'right',
+				border:false,
+				layout : 'form',
+				items : [com_reportDepartment,time_reportTo]
+	        },{
+				columnWidth : 0.04,
+				border : false,
+				labelAlign:'right',
+				layout : 'form',
+				defaultType : 'hidden'
+			},{
+	        	columnWidth : 0.3,
+				labelAlign:'right',
+				border:false,
+				layout : 'form',
+				items : [com_caseState,com_eventLevel]
+	        }]
+	        ,buttons: [{
+	            text: '查询'
+	            ,iconCls: 'search'
+	            ,handler: function(){
+	            	onSearch(1);
+	            }
+	        }]
+	    });
+	    
+	    /////////////////////////////////////////////////////危险源那块
+    	var time_reportFrom_ds = new Boat.UI.UnitFieldDate({
+				id : 'time_from_ds',
+				name: 'time_form_ds',
+				fieldLabel : '上报时间',
+				width : 190
+		});
+	    time_reportFrom_ds.on('focus', function() {
+				WdatePicker({
+					el : 'time_from_ds',
+					dateFmt : 'yyyy-MM-dd HH:mm:ss',
+					onpicked : function() {
+					    time_reportFrom_ds.clearInvalid();
+					},
+					maxDate:'#F{$dp.$D(\'time_to\')||\'%y-%M-%d %H:%m:%s\'}'
+			  });
+	    });
+
+
+        var time_reportTo_ds = new Boat.UI.UnitFieldDate({
+				id : 'time_to_ds',
+				name: 'time_to_ds',
+				fieldLabel : '至',
+				width : 190
+			});
+	    time_reportTo_ds.on('focus', function() {
+				WdatePicker({
+					el : 'time_to_ds',
+					dateFmt : 'yyyy-MM-dd HH:mm:ss',
+					onpicked : function() {
+					    time_reportFrom_ds.clearInvalid();
+					},
+					minDate : '#F{$dp.$D(\'time_from\')}',
+					maxDate : '#F{\'%y-%M-%d %H:%m:%s\'}'
+			  });
+	    });   	
+    	var txt_caseName_ds = new Ext.form.TextField({
+    	    fieldLabel: '事件主题',
+    	    width: 190
+    	});
+    	var com_caseState_ds = new Ext.form.ComboBox({
+//    		id: 'com_caseState',
+    	    fieldLabel: '事件状态'
+    	    ,hiddenName: 'h_state'
+    	    ,displayField: 'state'
+    	    ,valueField: 'id'
+    	    //,readOnly: true
+    	    ,editable: false
+    	    ,store: ds_caseState
+    	    ,triggerAction: 'all'
+    	    ,mode: 'local'
+    	    ,width: 190   
+    	});   	
+    	var com_eventLevel_ds = new Ext.form.ComboBox({
+    	    fieldLabel: '事件级别'
+    	    ,hiddenName: 'h_level'
+    	    ,displayField: 'level'
+    	    ,valueField: 'id'
+    	    ,store: ds_caseLevelList
+//    	    ,readOnly: true
+    	    ,editable: false
+    	    ,triggerAction: 'all'
+    	    ,mode: 'local'
+    	    ,width: 190    	    
+    	});
+
+    	var com_eventType_ds = new Ext.ux.TreeCombo({
+		    expandAll:false,//是否在点击combox时将树全部展开
+		    fieldLabel:'事件类型',
+		    loader:typeLoader,
+		    editable:false,
+		    readOnly:true,
+		    width:190	
+	    });
+	    //	递归的获取所有子节点的ID
+	    com_eventType_ds.getTree().on('click',function(node,event){
+		    arrayEventID.length = 0;//clear former ones
+		    recurTree(node,arrayEventID);	
+	    });
+    	//危险源树形
+	    var dstypeLoader = new Ext.tree.TreeLoader({
+	        url: '/CoalMine/servlet/ShowCaseTypeTreeServlet'
+	        ,baseParams:{
+	        	action: 'getDSTypeTree'
+	        }
+	    });
+	    var com_DangerSourceType = new Ext.ux.TreeCombo({
+	    	expandAll:false,
+		    fieldLabel:'危险源',
+		    valueField: 'id',
+		    loader:dstypeLoader,
+		    editable:false,
+		    readOnly:true,
+		    width:190
+	    });
+	    var fs_search_ds = new Ext.form.FieldSet({
+			region:'north',
+			title:'事件查询',
+			//autoHeight : true,
+			bodyStyle: 'position:relative',
+			anchor:'100% 30%',
+			layout : 'column',
+			border:false,
+			
+			items:[{
+				columnWidth : 0.3,
+				border:false,
+				layout : 'form',
+				labelAlign:'right',
+				items : [txt_caseName_ds,time_reportFrom_ds,com_caseState_ds]
+			},{
+				columnWidth : 0.04,
+				border : false,
+				labelAlign:'right',
+				layout : 'form',
+				defaultType : 'hidden'
+			},{
+				columnWidth : 0.3,
+				border:false,
+				labelAlign:'right',
+				layout : 'form',
+				items : [com_DangerSourceType,time_reportTo_ds]//[6.10]
+			},{
+				columnWidth : 0.04,
+				border : false,
+				labelAlign:'right',
+				layout : 'form',
+				defaultType : 'hidden'
+			},{
+				columnWidth : 0.3,
+				labelAlign:'right',
+				border:false,
+				layout : 'form',
+				items : [com_eventLevel_ds,com_eventType_ds]	
+			}],
+			buttons:[{
+				text:'查询'
+				,iconCls:'search'
+				,handler: function(){
+					onSearch(2);
+				}
+            }]
+	});
+	    //////////////////////////////////////////////////////////////接警重大突发案件那块
+	    var txt_reporter = new Ext.form.TextField({
+    	    fieldLabel: '报告人',
+    	    width: 190
+//    	    ,bodyStyle : 'position:relative'
+    	});
+        var time_reportFrom_duty = new Boat.UI.UnitFieldDate({
+				id : 'time_from_duty',
+				name: 'time_form_duty',
+				fieldLabel : '上报时间',
+				width : 190
+		});
+	    time_reportFrom_duty.on('focus', function() {
+				WdatePicker({
+					el : 'time_from_duty',
+					dateFmt : 'yyyy-MM-dd HH:mm:ss',
+					onpicked : function() {
+					    time_reportFrom_duty.clearInvalid();
+					},
+					maxDate:'#F{$dp.$D(\'time_to\')||\'%y-%M-%d %H:%m:%s\'}'
+			  });
+	    });
+
+        var time_reportTo_duty = new Boat.UI.UnitFieldDate({
+				id : 'time_to_duty',
+				name: 'time_to_duty',
+				fieldLabel : '至',
+				width : 190
+			});
+	    time_reportTo_duty.on('focus', function() {
+				WdatePicker({
+					el : 'time_to_duty',
+					dateFmt : 'yyyy-MM-dd HH:mm:ss',
+					onpicked : function() {
+					    time_reportFrom_duty.clearInvalid();
+					},
+					minDate : '#F{$dp.$D(\'time_from\')}',
+					maxDate : '#F{\'%y-%M-%d %H:%m:%s\'}'
+			  });
+	    });
+    	var txt_caseName_duty = new Ext.form.TextField({
+    	    fieldLabel: '事件主题',
+    	    width: 190
+    	});
+    	var com_caseState_duty = new Ext.form.ComboBox({
+    	    fieldLabel: '事件状态'
+    	    ,hiddenName: 'h_state'
+    	    ,displayField: 'state'
+    	    ,valueField: 'id'
+    	    //,readOnly: true
+    	    ,editable: false
+    	    ,store: ds_caseState
+    	    ,triggerAction: 'all'
+    	    ,mode: 'local'
+    	    ,width: 190   	    
+    	});
+    	var com_eventLevel_duty = new Ext.form.ComboBox({
+    	    fieldLabel: '事件级别'
+    	    ,hiddenName: 'h_level'
+    	    ,displayField: 'level'
+    	    ,valueField: 'id'
+    	    ,store: ds_caseLevelList
+//    	    ,readOnly: true
+    	    ,editable: false
+    	    ,triggerAction: 'all'
+    	    ,mode: 'local'
+    	    ,width: 190
+    	});
+
+    	var com_eventType_duty = new Ext.ux.TreeCombo({
+		    expandAll:false,//是否在点击combox时将树全部展开
+		    fieldLabel:'事件类型',
+		    loader:typeLoader,
+		    editable:false,
+		    readOnly:true,
+		    width:190	
+	    });
+	     //	递归的获取所有子节点的ID
+	    com_eventType_duty.getTree().on('click',function(node,event){
+		    arrayEventID.length = 0;//clear former ones
+		    recurTree(node,arrayEventID);	
+	    });
+	    var fs_search_duty = new Ext.form.FieldSet({
+			region:'north',
+			title:'事件查询',
+			anchor : '100% 30%',
+			bodyStyle: 'position:relative',
+			//width:'98%',
+			layout : 'column',
+			border:false,
+			items:[{
+				columnWidth : 0.3,
+				border:false,
+				layout : 'form',
+				labelAlign:'right',
+				items : [txt_caseName_duty,time_reportFrom_duty,com_caseState_duty]
+					},{
+				columnWidth : 0.04,
+				border : false,
+				labelAlign:'right',
+				layout : 'form',
+				defaultType : 'hidden'
+					},{
+				columnWidth : 0.3,
+				border:false,
+				labelAlign:'right',
+				layout : 'form',
+				items : [com_eventType_duty,time_reportTo_duty]//[6.10]
+					},{
+				columnWidth : 0.04,
+				border : false,
+				labelAlign:'right',
+				layout : 'form',
+				defaultType : 'hidden'
+					},{
+				columnWidth : 0.3,
+				labelAlign:'right',
+				border:false,
+				layout : 'form',
+				items : [com_eventLevel_duty,txt_reporter]//[6.10]	
+					}],
+			buttons:[{
+				text:'查询'
+				,iconCls:'search'
+				,handler:function(){
+					onSearch(3);
+				}
+			}]
+	});
+	    function onSearch(type){
+	    	var raw = com_eventLevel.getRawValue();
+		    var levelID = -1;
+		    if (raw.length > 0) {// [3.11]
+			    var index = ds_caseLevelList.find('level', raw);
+			    if (index > -1)
+				    levelID = ds_caseLevelList.getAt(index).data.id;
+		    }
+		    if (-1 == levelID)
+			    levelID = '';
+	    	
+			var _typeID = arrayEventID.join(',');
+			    
+	        
+	        if(1 == type){                            //日报事件
+	            ds_caseList.proxy.conn.url = '/CoalMine/servlet/ConditionCasePaging';
+	            ds_caseList.baseParams.action = '1';
+	    	//!!!条件分页
+		    ds_caseList.on('beforeload',function(){  
+		    	var st = time_reportFrom.getValue();
+		    	var st2 = time_reportTo.getValue();
+			    Ext.apply(this.baseParams,{  
+					caseName:txt_caseName.getValue()
+					,reporterDepartment:com_reportDepartment.getValue()
+					,StartTime: st
+					,endTime: st2
+					,caseState:com_caseState.getRawValue()
+					,eventTypeID :_typeID//typeID
+					,eventLevelID:levelID//
+			    });  
+			    }); 
+		    ds_caseList.load({
+			    params:{
+				    start:0
+				    ,limit:Ext.getCmp('pt_paging').pageSize}
+		    });
+	        }//if
+	        else if(2 == type){
+	        	ds_caseList_ds.proxy.conn.url = '/CoalMine/servlet/ConditionCasePaging';
+	            ds_caseList_ds.baseParams.action = '2';
+	        	ds_caseList_ds.on('beforeload', function(){
+	        		Ext.apply(this.baseParams,{
+	        		    caseName: txt_caseName_ds.getValue()
+	        		    ,dangerSource:com_DangerSourceType.getValue()	        		    
+	        		    ,StartTime:time_reportFrom_ds.getValue()
+					    ,endTime:time_reportTo_ds.getValue()
+					    ,caseState:com_caseState_ds.getRawValue()
+					    ,eventTypeID :_typeID//
+					    ,eventLevelID:levelID//
+	        		})
+	        	});	
+	        	ds_caseList_ds.load({
+			    params:{
+				    start:0
+				    ,limit:Ext.getCmp('pt_paging_ds').pageSize}
+		        });
+	        }//else if
+	        else if(3 == type){
+	        	ds_caseList_duty.proxy.conn.url = '/CoalMine/servlet/ConditionCasePaging';
+	            ds_caseList_duty.baseParams.action = '3';
+	        	ds_caseList_duty.on('beforeload', function(){
+	        		Ext.apply(this.baseParams,{
+	        		    caseName: txt_caseName_duty.getValue()
+	        		    ,reporter:txt_reporter.getValue()
+	        		    ,StartTime:time_reportFrom_duty.getValue()
+					    ,endTime:time_reportTo_duty.getValue()
+					    ,caseState:com_caseState_duty.getRawValue()
+					    ,eventTypeID :_typeID//typeID//[6.10]
+					    ,eventLevelID:levelID//[6.10]
+	        		})
+	        	});	
+	        	ds_caseList_duty.load({
+			    params:{
+				    start:0
+				    ,limit:Ext.getCmp('pt_paging_duty').pageSize}
+		        });
+	        }//else if
+	    }
+	    //////////////////////////////////////////////////////////////////////////////////////
+	    //处置窗口
+	    function createDealWindow(type,caseID){
+	    	var txt_eventName_temp = new Ext.form.TextField({
+				name:'caseName'
+				,fieldLabel : '事件主题'
+				,unitText : '<font color="red"  style="font-weight:bold">（必填）</font>'
+				,allowBlank : false
+				,width:130
+		    });
+            var txt_eventOccurDate_temp = new Boat.UI.UnitFieldDate({
+				id : 'occuranceTime',
+				name: 'occuranceTime',
+				fieldLabel : '发生时间',
+				width : 130
+				,allowBlank: false
+		    });
+	        txt_eventOccurDate_temp.on('focus', function() {
+				WdatePicker({
+					el : 'occuranceTime',
+					dateFmt : 'yyyy-MM-dd HH:mm:ss',
+					onpicked : function() {
+					    txt_eventOccurDate_temp.clearInvalid();
+					},
+					maxDate:'#F{$dp.$D(\'time_to\')||\'%y-%M-%d %H:%m:%s\'}'
+			     });
+	        });
+		    var txt_eventReportDate_temp = new Ext.form.TextField({
+				name:'reportTime'
+				,fieldLabel : '上报时间'
+				,allowBlank : false
+				,readOnly: true
+				,width:130
+//				,format:'Y-m-d'
+		    });
+		    var txt_eventLocation_temp = new Ext.form.TextField({
+				name:'occurancePlace'
+				,fieldLabel : '发生地点'
+				,allowBlank : false
+				,width:130
+		    });
+		    var txt_caseDescription_temp = new Ext.form.TextArea({
+				name:'caseDescription'
+				,fieldLabel : '事件描述'
+				,grow:true
+				,width:495
+		    });
+		    var txt_state_temp = new Ext.form.TextField({
+				name:'state'
+				,fieldLabel : '事件状态 '
+				,width:130
+				,allowBlank:false
+				,readOnly:true
+		    });
+		    var txt_injuredNum_temp = new Ext.form.TextField({
+				name:'injuredNum'
+				,fieldLabel : '伤亡人数'
+//				,allowBlank : false
+				,width:130
+		    });
+		    if(1 == type){
+		        var txt_reporter_temp = new Ext.form.ComboBox({
+//		        	id:'reporter',
+		        	name:'reporter'
+    	            ,fieldLabel: '上报科室'
+    	            ,hiddenName: 'reporter'
+    	            ,displayField: 'department'
+    	            ,valueField: 'department'
+//    	            ,readOnly: true
+    	            ,editable: false
+    	            ,store: ds_department
+    	            ,triggerAction: 'all'
+    	            ,mode: 'local'
+    	            ,width: 130 
+    	       });	    
+		        var txt_reporterPhone_temp = new Ext.form.TextField({
+				    name:'reporterPhone'
+				    ,fieldLabel : '科室电话'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		    }
+		    else if(2 == type || 3 == type){
+		        var txt_reporter_temp = new Ext.form.TextField({
+				    name:'reporter'
+				    ,fieldLabel : '上报人'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		        var txt_reporterPhone_temp = new Ext.form.TextField({
+				    name:'reporterPhone'
+				    ,fieldLabel : '上报人电话'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		    }
+		    if(2 == type){
+		        var txt_dangerSource_temp = new Ext.form.TextField({
+		            name: 'dangerSource'
+		            ,fieldLabel: '危险源 '
+		            ,width: 130
+		            ,readOnly: true
+		        });
+		    }
+		    ///////////////////事件级别和事件类型在此重新定义才能获取到
+		    var com_eventLevel_deal = new Ext.form.ComboBox({
+		    	id: 'level',
+		    	name: 'level'
+    	        ,fieldLabel: '事件级别'
+    	        ,hiddenName: 'caseLevel'
+    	        ,displayField: 'level'
+    	        ,valueField: 'id'
+    	        ,store: ds_caseLevelList
+    	        ,editable: false
+    	        ,mode: 'local'
+    	        ,width: 190
+    	    });
+    	var com_eventType_deal = new Ext.ux.TreeCombo({
+    		id: 'caseType',
+    		name: 'caseType',
+		    expandAll:false,//是否在点击combox时将树全部展开
+		    fieldLabel:'事件类型',
+		    loader:typeLoader,
+		    editable:false,
+		    width:190	
+	    });
+	   
+		    var txt_caseDescri_temp = new Ext.form.TextArea({
+				name:'caseDescri'
+				,fieldLabel : '事故简介'
+				,grow:true
+				,width:495
+		    });
+		    var txt_caseReason_temp = new Ext.form.TextArea({
+				name:'caseReason'
+				,fieldLabel : '事故原因及分析'
+				,grow:true
+				,width:495
+		    });
+		    var txt_safeWarning_temp = new Ext.form.TextArea({
+				name:'safeWarning'
+				,fieldLabel : '安全提示'
+				,grow:true
+				,width:495
+		    });
+			var radio_evalState_temp = new Ext.ux.RadioGroup({
+				name:'disposeType'
+				,horizontal:true
+				,width:495
+    			,columns: 3
+    			,hideLabel: true
+				,radios: [{
+				    value:'重大事故移交领导'
+					,boxLabel: '重大事故移交领导'
+					,tooltip:'重大事故移交领导' 
+				   },{
+				     value:'普通事件转存'
+					,boxLabel: '普通事件转存'
+					,tooltip:'普通事件转存'
+					,checked: true
+				   },{
+				   	 value:'事件驳回'
+					,boxLabel: '事件驳回'
+					,tooltip:'事件驳回'
+				   }]
+			});
+			var txt_caseSuggest_temp = new Ext.form.TextArea({
+				name:'dealSuggest'
+				,fieldLabel : '处置意见'
+				,grow:true
+				,width:495
+				,allowBlank: false
+		    });
+		    
+		    txt_dealPerson_temp = new Ext.form.TextField({
+					name:'dealPerson'
+					,fieldLabel : '处置人'
+					,width:130
+					,allowBlank: false
+			});
+		
+			//基本信息框
+			if(1 == type ){
+		    var fs_basicInfo = new Ext.form.FieldSet({
+		    	title : '基本信息',
+				name:'fs_basicInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+//				layout:'column',
+				border:false,
+				width : '90%',
+				items :[txt_eventName_temp, txt_eventReportDate_temp, txt_eventOccurDate_temp,txt_state_temp
+				       ,txt_eventLocation_temp,txt_reporter_temp, txt_caseDescription_temp]
+		    });
+			}
+			else if( 3 == type){
+		    var fs_basicInfo = new Ext.form.FieldSet({
+		    	title : '基本信息',
+				name:'fs_basicInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+//				layout:'column',
+				border:false,
+				width : '90%',
+				items :[txt_eventName_temp, txt_eventReportDate_temp, txt_eventOccurDate_temp,txt_state_temp
+				       ,txt_eventLocation_temp,txt_reporter_temp,txt_reporterPhone_temp, txt_caseDescription_temp]
+		    });
+			}
+			else if(2 == type){
+				var fs_basicInfo = new Ext.form.FieldSet({
+		    	    title : '基本信息',
+				    name:'fs_basicInfo',
+				    autoHeight : true,
+				    bodyStyle: 'position:relative',
+//				    layout:'column',
+				    border:false,
+				    width : '90%',
+				    items :[txt_eventName_temp, txt_eventReportDate_temp, txt_eventOccurDate_temp
+				       ,txt_eventLocation_temp,txt_state_temp, txt_caseDescription_temp,txt_dangerSource_temp, 
+				       txt_reporter_temp,txt_reporterPhone_temp]
+		       });
+			}
+
+		    //附件框
+		    var uploadDocs = new Ext.ux.UploadDialog.Dialog({
+				name:'docs'
+				,url : '/TibetER/servlet/CaseUpload?caseID='+caseID+'&caseType='+type
+				,deleteUrl:'/TibetER/servlet/CaseOperation'// [5.6]
+				,base_params:{
+					action:'deleteAttachment'
+					,field:'filename'//删除时，需要传给后台的参数集
+				}
+				,height : 160
+//				,autoScroll:true
+				,serverDelete:false//[5.9]
+				,width:720
+				,frame:true
+				,autoCreate : true
+//				,parentWindow : win//[4.5]在文件传输完成后自动关闭窗口
+				,hasCheck:false//[3.15]在uploadDialog中新加属性
+				,title : '附件'
+
+		    });
+	
+		    //重大突出事件框		   
+		    var fs_bigCase = new Ext.form.FieldSet({
+		    	title : '重大突发事件',
+				name:'fs_bigCase',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+//				layout:'column',
+//				layout: 'form',
+				checkboxName: 'test',
+				collapsible: true,
+				collapsed: true,
+				border:false,
+				width : '90%',
+				items :[ com_eventType_deal, com_eventLevel_deal, txt_injuredNum_temp
+//				    ,new Ext.form.Checkbox({
+//				        name: 'injuredDetail'
+//				        ,fieldLabel: '是否填写伤亡人员详细信息'
+//				        ,boxLabel: '是'			        
+////				        }
+//				        ,listeners:{
+//				            'check':function(){
+//				            	var _win_injured = createInjuredDetailWindow(caseID,type,0,-1);
+//				            	_win_injured.show();
+//				            }				            
+//				        }
+//				    })
+				]
+		    });
+		    
+		    //详细信息
+		    var fs_detailInfo = new Ext.form.FieldSet({
+		    	title : '详细信息',
+				name:'fs_detailInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+//				layout:'column',
+				collapsible: true,
+				collapsed: true,
+				border:false,
+				width : '90%',
+				items :[txt_caseDescri_temp, txt_caseReason_temp, txt_safeWarning_temp]
+		    });
+		    
+		    //处置
+		    var fs_dealInfo = new Ext.form.FieldSet({
+		    	title : '处置',
+				name:'fs_deal',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+//				layout:'column',
+				border:false,
+				width : '90%',
+				items :[ radio_evalState_temp, txt_caseSuggest_temp, txt_dealPerson_temp]
+		    });	
+		    
+		    var fp = new Ext.FormPanel({
+				name:'totalForm'
+//				,id:'win_totalForm'
+				,layout:'form'
+				,autoHeight:true
+				,width:700
+				,items:[fs_basicInfo,fs_bigCase, fs_detailInfo,fs_dealInfo]
+		    });
+	    	var win = new Ext.Window({
+	    		layout : 'fit',
+			    collapsible : true,
+			    border : false,
+			    shadow : false,
+			    frame : true,	
+			    width : 760,
+			    height : 570,
+			    bodyStyle : 'position:relative', // [3.12]lfm:解决文本框不跟随移动的问题		
+			    autoScroll : true,
+			    draggable : true,// 是否可以拖放			
+			    resizable : true,
+			    buttonAlign : 'center',
+			    items : [fp],
+			    buttons :[{
+			    	    text: '确定',
+			    	    handler: function(){
+			    	        var flag = fp.getForm().isValid();
+//			    	        var occurT = txt_eventOccurDate_temp.getValue().format('Y-m-d').toString();
+				            if(true == flag){
+				            	fp.getForm().submit({				            	
+				            	    url : '/CoalMine/servlet/CaseOperation',
+				            	    method : 'POST',
+						            params : {
+							            action : 'caseDeal',
+							            cType: type,
+							            CaseID: caseID
+						            },
+						            success: function(request,response){
+						            	Ext.Msg.alert('提示','处置成功！');
+						            	win.close();
+						            	refreshCaseInfo(type,caseID);
+						            	ds_caseList.load({
+									        params:{
+												start:0
+												,limit:Ext.getCmp('pt_paging').pageSize
+										    }
+									    });
+						            },
+						            failure: function(){
+						            	Ext.Msg.alert('提示','处置失败！');
+						            }
+				            	});
+				            }
+				            else
+				                Ext.Msg.alert('警告','请填好所有必填项！');
+			    	    }
+			        },{ 
+			        	text: '取消',
+			        	handler : function() {
+//					        if (-1 == btn_click)
+//						    btn_click = 1;
+
+					        win.close();
+				        }	
+			    }]
+	    	});
+	    	win.add(uploadDocs);
+	    	return win;
+	    }
+	    
+	    //////////////////////////////////////////////////////////////////////////////////
+	    // 伤亡人员列表
+    var ds_injuredList = new Ext.data.Store({
+        reader: new Ext.data.JsonReader(
+            {root: 'rows', totalProperty: 'resultCount'},
+            [{name: "id", mapping: 'injuredID'}
+             ,{name: "injuredName"}
+             ,{name: "injuredSex"}
+             ,{name: "injuredAge"}
+             ,{name: "injuredNation"}
+             ,{name: "injuredScale", mapping:'injuredLevel'}
+             ,{name: "workStyle", mapping: 'jobs'}
+             ,{name: "workTime", mapping: 'dayTime'}
+             ,{name: "isHoliday"}
+             ,{name: "detailCaseStyle", mapping: 'caseDetailType'}
+             ,{name: "caseName"}
+             ,{name: "telephone"}
+             ,{name: "location"}
+            ]
+        )
+        ,proxy: new Ext.data.HttpProxy({ 
+        	url:'/CoalMine/servlet/InjuredPeopleServlet'
+        })
+        ,baseParams:{
+        	action:'getInjuredInfo'
+        }
+    });
+
+        //////////////////////////////////////////////////////////////////////////////////
+	    //伤亡人员详细信息窗口查看
+        function createInjured_view(){
+	        var grid_injuredGrid = new Ext.grid.GridPanel({	           	            
+//	            title: '伤亡人员信息列表',
+//	            height: 100,
+	            autoScroll: true,
+	            collapsible: true,
+	            loadMask: true,
+	            viewConfig:{
+	        	    forceFit: true
+	        	    ,emptyText: '没有记录！'
+	            }
+	            ,store: ds_injuredList
+	            ,columns:[
+	                new Ext.grid.RowNumberer({
+	                    renderer:function(value,metadata,record,rowIndex){
+	                	    return record_start + 1 + rowIndex;
+	                    }
+	                })
+	                ,{header: '姓名', dataIndex: 'injuredName', sortable: true}
+	                ,{header: '性别', dataIndex:'injuredSex', sortable:true}
+                    ,{header: '年龄', dataIndex:'injuredAge', sortable:true}               
+                    ,{header: '民族', dataIndex:'injuredNation', sortable:true}
+                    ,{header: '伤重程度', dataIndex:'injuredScale', sortable:true}
+                    ,{header: '工种', dataIndex:'workStyle', sortable:true}
+                    ,{header: '班次', dataIndex:'workTime', sortable:true}
+                    ,{header: '节假日', dataIndex:'isHoliday', sortable:true}
+                    ,{header: '具体事故类别', dataIndex:'detailCaseStyle', sortable:true}
+	            ]	            
+	        });	        
+	        var winInjured_view = new Ext.Window({
+	        	title: '伤亡人员信息',
+	        	layout : 'fit',
+			    collapsible : true,
+			    border : false,
+			    shadow : false,
+			    frame : true,	
+			    width : 770,
+			    height : 500,
+			    bodyStyle : 'position:relative', // [3.12]lfm:解决文本框不跟随移动的问题		
+			    autoScroll : true,
+			    draggable : true,// 是否可以拖放			
+			    resizable : true,
+			    buttonAlign : 'center',
+			    items : [grid_injuredGrid],
+			    buttons :[
+			    	{
+				        text: '关闭',
+				        handler: function(){
+				            winInjured_view.close();
+				        }
+				    }	
+			    ]
+	        });
+	        return winInjured_view;
+	    }
+	    //////////////////////////////////////////////////////////////////////////////////
+	    //伤亡人员详细信息窗口	   
+	    var sm_injured = new Ext.grid.CheckboxSelectionModel({singleSelect:false,width:25});
+	    //caseID 和type表明哪个事件的伤亡人员信息，operationType是操作方式：0代表接警新案件中的上报，1代表编辑中的修改操作
+	    function createInjuredDetailWindow(caseID,type,operationType,injuredID){
+	    	ds_injuredList.load({
+	    	    params: {
+				    CaseID : caseID,
+					type: type
+		        }
+	    	});
+	    	ds_injuredNation.load();
+	        var grid_injuredGrid_e = new Ext.grid.GridPanel({	           	            
+	            title: '',
+	            height: 200,
+	            autoScroll: true,
+	            collapsible: true,
+	            loadMask: true,
+	            viewConfig:{
+	        	    forceFit: true
+	        	    ,emptyText: '没有记录！'
+	            }
+//	            ,tbar: toolbar_injured
+	            ,sm:sm_injured
+	            ,store: ds_injuredList
+	            ,columns:[
+	                new Ext.grid.RowNumberer({
+	                    renderer:function(value,metadata,record,rowIndex){
+	                	    return record_start + 1 + rowIndex;
+	                    }
+	                }),
+	                sm
+	                ,{header: '姓名', dataIndex: 'injuredName', sortable: true}
+	                ,{header: '性别', dataIndex:'injuredSex', sortable:true}
+                    ,{header: '年龄', dataIndex:'injuredAge', sortable:true}               
+                    ,{header: '民族', dataIndex:'injuredNation', sortable:true}
+                    ,{header: '伤重程度', dataIndex:'injuredScale', sortable:true}
+                    ,{header: '工种', dataIndex:'workStyle', sortable:true}
+                    ,{header: '班次', dataIndex:'workTime', sortable:true}
+                    ,{header: '节假日', dataIndex:'isHoliday', sortable:true}
+                    ,{header: '具体事故类别', dataIndex:'detailCaseStyle', sortable:true}
+	            ]
+	        });
+	        
+	        var txt_injuredName = new Ext.form.TextField({
+				name:'injuredName'
+				,id: 'injuredName'
+				,fieldLabel : '姓名'
+				,allowBlank : false
+				,width:130
+		    });
+		    var txt_injuredAge = new Ext.form.TextField({
+				name:'injuredAge'
+				,fieldLabel : '年龄'
+//				,allowBlank : false
+				,regex: /^[0-9]{1,3}$/
+                ,regexText:'请输入数字,长度为1-3位'
+				,width:130
+		    });
+		    var radio_injuredSex = new Ext.ux.RadioGroup({
+				name:'injuredSex',
+				horizontal:true
+    			,columns: 1
+    			,fieldLabel: '性别'
+				,radios: [{
+				    value:'男'
+					,boxLabel: '男'
+					,tooltip:'男' 
+					,checked: true
+				   },{
+				     value:'女'
+					,boxLabel: '女'
+					,tooltip:'女'
+				   }]
+			});
+			var com_injuredNation = new Ext.form.ComboBox({
+			    fieldLabel:'民族'
+//			    ,name:'injuredNation'
+			    ,hiddenName:'injuredNation'
+			    ,displayField:'text'
+			    ,valueField:'text'
+			    ,editable:false
+			    ,store:ds_injuredNation
+			    ,triggerAction:'all'
+			    ,mode:'local'
+			    ,width:150
+	        });
+	        var com_injuredLevel = new Ext.form.ComboBox({
+			    fieldLabel:'伤重程度'
+			    ,hiddenName:'injuredLevel'
+			    ,displayField:'text'
+			    ,valueField:'text'
+			    ,editable:false
+			    ,store:ds_injuredLevel
+			    ,triggerAction:'all'
+			    ,mode:'local'
+			    ,width:150
+	        });
+	        var com_injuredWork = new Ext.form.ComboBox({
+			    fieldLabel:'工种'
+			    ,hiddenName:'injuredWork'
+			    ,displayField:'text'
+			    ,valueField:'text'
+			    ,editable:false
+			    ,store:ds_injuredJob
+			    ,triggerAction:'all'
+			    ,mode:'local'
+			    ,width:150
+	        });
+	        var com_injuredDetailStyle = new Ext.form.ComboBox({
+			    fieldLabel:'具体事故类别'
+			    ,hiddenName:'injuredDetailStyle'
+			    ,displayField:'text'
+			    ,valueField:'text'
+			    ,editable:false
+			    ,store:ds_detailType
+			    ,triggerAction:'all'
+			    ,mode:'local'
+			    ,width:150
+			    ,items:[]
+	        });
+	        var com_injuredWorkTime = new Ext.form.ComboBox({
+			    fieldLabel:'班次'
+			    ,hiddenName:'injuredWorkTime'
+			    ,displayField:'text'
+			    ,valueField:'text'
+			    ,editable:false
+			    ,store:ds_workTime
+			    ,triggerAction:'all'
+			    ,mode:'local'
+			    ,width:150
+	        });
+	        var radio_injuredHoliday = new Ext.ux.RadioGroup({
+				name:'injuredHoliday'
+				,hiddenName:'injuredHoliday'
+				,horizontal:true
+    			,columns: 1
+    			,fieldLabel: '是否节假日'
+				,radios: [{
+				    value:'1'
+					,boxLabel: '是'
+					,tooltip:'是' 
+				   },{
+				     value:'0'
+					,boxLabel: '否'
+					,tooltip:'否'
+					,checked: true
+				   }]
+			});
+			var txt_injuredLocation = new Ext.form.TextField({
+				name:'location'
+				,fieldLabel : '地区'
+//				,allowBlank : false
+				,width:130
+		    });
+		    var txt_injuredPhone = new Ext.form.TextField({
+				name:'injuredPhone'
+				,fieldLabel : '联系电话'
+//				,allowBlank : false
+				,width:130
+				,regex:/(^[0-9]{3,4}\-[0-9]{3,8}$)|(^[0-9]{3,8}$)|(^\([0-9]{3,4}\)[0-9]{3,8}$)|(^13\d{9}$)|(^15[0-35-9]\d{8}$)|(^18[05-9]\d{8}$)|((\d{4}|\d{3})-(\d{7,8})\-(\d{1,4})$)|((\d{7,8})\-(\d{1,4})$)/
+				,regexText:'输入的电话号码不合理，支持手机号码、3-4位区号、7-8位直拨号码、1－4位分机号，如13515480958,0891-88032354，0891-88032684-506'
+		    });
+	        var fs_injuredAdd = new Ext.form.FieldSet({
+	        	title : '添加/编辑伤亡人员详细信息',
+				name:'fs_injuredAdd',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+				layout:'column',
+				border:false,
+				width : '94%',
+				items:[
+				{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_injuredName,radio_injuredSex,txt_injuredAge,
+				       com_injuredNation, com_injuredLevel,com_injuredWork]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[ com_injuredDetailStyle,
+				       com_injuredWorkTime,radio_injuredHoliday,txt_injuredLocation,txt_injuredPhone ]
+				}
+				]
+	        });
+	        if(0 == operationType){
+	        var fp_injured = new Ext.FormPanel({
+				name:'totalForm'
+//				,id:'win_totalForm'
+				,layout:'form'
+//				,autoHeight:true
+				,height: 500
+				,width:700
+				,items:[grid_injuredGrid_e, fs_injuredAdd]
+		    });
+		    }else if(1 == operationType){
+		    	var fp_injured = new Ext.FormPanel({
+				    name:'totalForm'
+//				    ,id:'win_totalForm'
+				    ,layout:'form'
+//				    ,autoHeight:true
+				    ,height:500
+				    ,width:700
+				    ,items:[fs_injuredAdd]
+				    ,enableKeyEvents: true
+		        });
+		    }
+		    		    
+	        var winInjured = new Ext.Window({
+	        	title: '伤亡人员详细信息',
+	        	layout : 'fit',
+			    collapsible : true,
+			    border : false,
+			    shadow : false,
+			    frame : true,	
+			    width : 770,
+			    height : 500,
+			    bodyStyle : 'position:relative', // 解决文本框不跟随移动的问题		
+			    autoScroll : true,
+			    draggable : true,// 是否可以拖放			
+			    resizable : true,
+			    buttonAlign : 'center',
+			    items : [fp_injured],
+			    buttons :[
+			    	{ 
+			        	text: '保存'	,
+			        	iconCls: 'addInjured',
+			        	handler: function(){
+			        		var selItems = [];
+		                    selItems = grid_injuredGrid_e.getSelectionModel().getSelections();
+			        		var flag = fp_injured.getForm().isValid();
+				            if(true == flag){
+				            	fp_injured.getForm().submit({				            	
+				            	    url : '/CoalMine/servlet/CaseOperation',
+				            	    method : 'POST',
+						            params : {
+							            action : 'addInjured',
+							            cType: type,
+							            CaseID: caseID,
+							            operationType: operationType
+							            ,injuredID:injuredID
+						            },
+						            success: function(form,action){
+//						            	alert(action.result.injuredID);
+						             if(operationType == 0){ //添加新伤员的情况
+                                      var _type = ds_injuredList.recordType;
+                                      var _newTip = new _type({                                      	
+                                      	  id : action.result.injuredID, 
+                                          injuredName : txt_injuredName.getValue(),
+                                          injuredAge : txt_injuredAge.getValue(),
+					                      injuredSex : radio_injuredSex.getValue(),
+					                      injuredNation : com_injuredNation.getValue(),
+				                          injuredScale : com_injuredLevel.getValue(),
+				                          workStyle : com_injuredWork.getValue(),
+				                          detailCaseStyle : com_injuredDetailStyle.getValue(),
+				                          workTime : com_injuredWorkTime.getValue(),
+				                          isHoliday : radio_injuredHoliday.getValue()==1?'是':' 否'				                           
+                                      });
+                                      
+                                          ds_injuredList.insert(ds_injuredList.getCount(),_newTip);
+						            	}// if(operationType == 0)
+                                      else if(operationType == 1){ //修改已有伤亡人员信息的情况
+                                      	  var _rec=selItems[0];
+                                      	  _rec.data.injuredName = txt_injuredName.getValue();
+                                      	  _rec.data.injuredAge = txt_injuredAge.getValue();
+                                      	  _rec.data.injuredSex = radio_injuredSex.getValue();
+                                      	  _rec.data.injuredNation = com_injuredNation.getValue();
+                                      	  _rec.data.injuredScale = com_injuredLevel.getValue();
+                                      	  _rec.data.workStyle = com_injuredWork.getValue();
+                                      	  _rec.data.detailCaseStyle = com_injuredDetailStyle.getValue();
+                                      	  _rec.data.workTime = com_injuredWorkTime.getValue();
+                                      	  _rec.data.isHoliday = radio_injuredHoliday.getValue()==1?'是':'否';
+                                      	  grid_injuredGrid_e.getView().refresh();
+                                      	  operationType = 0;
+//											alert(_rec.data.injuredName);
+                                      	  //                                      	  grid_injuredGrid 
+//                                      	  Ext.Msg.alert(ds_injuredList.getCount());
+                                      }                                          
+                                      fp_injured.form.reset();
+						            },
+						            failure: function(){
+						            	Ext.Msg.alert('提示','添加失败！');
+						            }
+				            	});
+				            }
+				            else
+				                Ext.Msg.alert('警告','请填好所有必填项！');
+			        	}
+				    },{
+				    	id: 'injured_edit',
+				    	text: '编辑'	,			        	
+			        	iconCls:'edit',
+			        	disabled: true,
+//			        	enable: false,
+                        handler: function(){
+                        	var selItems = [];
+		                    selItems = grid_injuredGrid_e.getSelectionModel().getSelections();
+		                    if(selItems.length>1)
+		                        Ext.Msg.alert('提示','一次只能编辑一条记录！');
+		                    else{
+		                        var _rec=selItems[0];
+		                        fillInjuredWindow(_rec, winInjured);
+		                        operationType = 1;
+		                        injuredID = _rec.data.id;
+		                    }		                        
+//                            onInjuredEdit(selItems,caseID,type);
+                         }			        	
+				    },{
+				    	id: 'injured_redo',
+				    	text: '重置',
+				    	iconCls: 'redo',
+//				    	disabled: true,
+				        handler: function(){
+				           fp_injured.form.reset();
+				        }
+				    },{
+				    	id: 'injured_delete',
+				        text: '删除',
+				        iconCls: 'del',
+				        disabled: true,
+				        handler : function(){
+				        	var selItems = [];
+		                    selItems = grid_injuredGrid_e.getSelectionModel().getSelections();
+		                    var _delIDs = ''; //用来记录选中信息的id
+		                    for(_index=0;_index<selItems.length;_index++){
+		                        var _rec = selItems[_index];
+					            _delIDs += _rec.data.id +',';
+		                    }
+		                    Ext.MessageBox.show({
+		                    	title: '删除确认',
+		                    	msg: '确定要删除选中的['+selItems.length+']条伤亡信息记录吗？',
+		                    	fn : function(btn) {
+							        if (btn == 'ok'){
+								        //basicDelete(_delIDs, selItems,type);
+							           Ext.Ajax.request({
+				                           url : '/CoalMine/servlet/InjuredPeopleServlet',
+				                           method : 'POST',
+				                           params : {
+					                           action : 'deleteInjured',
+					                           delIDs: _delIDs
+				                           },
+				                           success : function(response) {
+	    	                                    for(i=0;i<selItems.length;i++){
+	    	                                    	var _rec = selItems[i];
+	    	                                        ds_injuredList.remove(_rec);
+	    	                                    }
+	    	                                    
+				                           },
+				                           failure : function(response) {
+					                           Ext.Msg.alert('警告：', '删除操作失败，请稍后再试...');
+				                           }
+			                           }); 
+							        }
+							        else {// 否，取消勾选
+								        grid_injuredGrid_e.getSelectionModel().clearSelections();						        	
+								        grid_injuredGrid_e.getView().refresh();// !!!!
+							        }
+		                    	},
+		                    	buttons : Ext.Msg.OKCANCEL,
+						        icon : Ext.Msg.INFO
+							})
+				        }//handler
+				    },{
+				        text: '关闭',
+				        iconCls: 'closewin',
+				        handler: function(){
+				            winInjured.close();
+				        }
+				    }	
+			    ]
+	        });
+	        //按钮控制 "编辑" "删除"
+	        sm_injured.on('selectionchange',function(sm){
+		        if(sm.hasSelection()){		        	
+		        	Ext.getCmp('injured_edit').enable();
+		        	Ext.getCmp('injured_delete').enable();
+		        }
+			    else{
+			        Ext.getCmp('injured_edit').disable();
+			        Ext.getCmp('injured_delete').disable();
+			    }
+	        });
+	        //按钮控制 '重置'
+//	        if(fp_injured.getForm().isValid()){
+//	            Ext.getCmp('injured_redo').enable();
+//	        }
+//	        if(txt_injuredName.getValue()!=null && txt_injuredName.getValue()!=""){
+//	            Ext.getCmp('injured_redo').enable();
+//	        }
+//	        fp_injured.on('onkeyUp',function(e){
+//	            Ext.getCmp('injured_redo').enable();
+//	        })
+//	        txt_injuredName.on('onkeyUp',function(e){
+//	            Ext.getCmp('injured_redo').enable();
+//	        })
+	        
+	        return winInjured;	        
+	    }
+	    
+//	    ////////////具体编辑伤亡人员信息的操作 type代表事件类型
+//	    function onInjuredEdit(selItems, caseID,type){	
+//	    	
+//		    Ext.each(selItems, function(_rec) {
+//	            var _winInjuredEdit = createInjuredDetailWindow(caseID,type,1,_rec.data.id);
+//  	    	    _winInjuredEdit.show();
+//  	    	    
+//  	    	    _winInjuredEdit.setTitle('信息编辑 -> ' + _rec.data.injuredName);
+//  	    	    fillInjuredWindow(_rec, _winInjuredEdit);
+//		    });
+//	    }
+//	    //编辑伤亡人员信息窗口
+//	    function createInjuredEditWindow(){
+//	        
+//	    }
+	    function fillInjuredWindow(record, window){
+	        if (window && record){
+	            var _form = window.getComponent(0).getForm();
+	            _form.findField('injuredName').setValue(record.data.injuredName);
+			    _form.findField('injuredAge').setValue(record.data.injuredAge);
+//			    _form.findField('injuredSex').setValue(record.data.injuredSex);
+			    _form.findField('injuredSex').setValue(record.data.injuredSex.trim());
+			    _form.findField('injuredNation').setValue(record.data.injuredNation);
+			    _form.findField('injuredLevel').setValue(record.data.injuredScale);			    
+			    _form.findField('injuredWork').setValue(record.data.workStyle);
+			    
+			    _form.findField('injuredDetailStyle').setValue(record.data.detailCaseStyle);
+			    _form.findField('injuredWorkTime').setValue(record.data.workTime);
+			    if(record.data.isHoliday == "true")
+			        _form.findField('injuredHoliday').setValue(1);
+			    else if(record.data.isHoliday == "false")
+			        _form.findField('injuredHoliday').setValue(0);
+			    _form.findField('location').setValue(record.data.location);
+			    _form.findField('injuredPhone').setValue(record.data.telephone);
+	        }
+	    }
+	    
+	    ///////////////////////////////////////////////////////////////////////
+	    //详情查看窗口
+	    function createDetailWindow(type,caseID){
+	    	ds_injuredList.load({
+	    	    params:{
+				    CaseID : caseID,
+					type: type
+		    }
+	    	});
+	    	var txt_eventName_detail = new Ext.form.TextField({
+				name:'caseName'
+				,fieldLabel : '事件主题'
+//				,allowBlank : false
+				,readOnly: true
+				,width:130
+		    });
+		    var txt_eventOccurDate_detail= new Ext.form.TextField({
+				name:'occuranceTime'
+				,fieldLabel:'发生时间'
+				,readOnly: true
+				,width:130
+		    });
+		    var txt_eventReportDate_detail = new Ext.form.TextField({
+				name:'reportTime'
+				,fieldLabel : '上报时间'
+				,readOnly: true
+				,width:130
+		    });
+		    var txt_eventLocation_detail = new Ext.form.TextField({
+				name:'occurancePlace'
+				,fieldLabel : '发生地点'
+				,readOnly: true
+				,width:130
+		    });		 	    
+		    var txt_injuredNum_detail = new Ext.form.TextField({
+				name:'injuredNum'
+				,fieldLabel : '伤亡人数'
+				,width:130
+				,readOnly: true
+		    });
+		    if(1 == type){
+		        var txt_reporter_detail = new Ext.form.TextField({
+				    name:'reporter'
+				    ,fieldLabel : '上报科室'
+				    ,width:130
+				    ,readOnly: true
+		        });		    
+		        var txt_reporterPhone_detail = new Ext.form.TextField({
+				    name:'reporterPhone'
+				    ,fieldLabel : '科室电话'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		    }
+		    else if(2 == type || 3 == type){
+		        var txt_reporter_detail = new Ext.form.TextField({
+				    name:'reporter'
+				    ,fieldLabel : '上报人'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		        var txt_reporterPhone_detail = new Ext.form.TextField({
+				    name:'reporterPhone'
+				    ,fieldLabel : '上报人电话'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		    }
+		    if(2 == type){
+		        var txt_dangerSource_detail = new Ext.form.TextField({
+		            name: 'dangerSource'
+		            ,fieldLabel: '危险源 '
+		            ,width: 130
+		            ,readOnly: true
+		        });
+		    }
+		    var txt_state_detail = new Ext.form.TextField({
+				name:'state'
+				,fieldLabel : '事件状态 '
+				,width:130
+				,readOnly: true
+		    });
+		    var txt_level_detail = new Ext.form.TextField({
+				name:'level'
+				,fieldLabel : '事件级别 '
+				,width:130
+				,readOnly: true
+		    });
+		    var txt_style_detail = new Ext.form.TextField({
+				name:'caseType'
+				,fieldLabel : '事件类型 '
+				,width:130
+				,readOnly: true
+		    });	
+		    var txt_caseDescription_detail = new Ext.form.TextArea({
+				name:'caseDescription'
+				,fieldLabel : '事件描述'
+				,grow:true
+				,width:495
+				,readOnly: true
+		    });
+		    var txt_caseDescri_detail = new Ext.form.TextArea({
+				name:'caseDescri'
+				,fieldLabel : '事故简介'
+				,grow:true
+				,width:495
+				,readOnly: true
+		    });
+		    var txt_caseReason_detail = new Ext.form.TextArea({
+				name:'caseReason'
+				,fieldLabel : '事故原因及分析'
+				,grow:true
+				,width:495
+				,readOnly: true
+		    });
+		    var txt_safeWarning_detail = new Ext.form.TextArea({
+				name:'safeWarning'
+				,fieldLabel : '安全提示'
+				,grow:true
+				,width:495
+				,readOnly: true
+		    });
+		    var radio_dealStyle_detail = new Ext.form.TextField({
+					name:'disposeType'
+					,fieldLabel:'处置方式'
+					,readOnly:true
+					,width:200//[7.18]
+			});
+			var txt_dealSuggest_detail = new Ext.form.TextArea({
+				name:'dealSuggest'
+				,fieldLabel : '处置意见'
+				,grow:true
+				,width:495
+				,readOnly: true
+		    });
+			var radio_dealPerson_detail = new Ext.form.TextField({
+					name:'disposePerson'
+					,fieldLabel:'处置人'
+					,readOnly:true
+					,width:200
+			});			
+		    var button_detail = new Ext.Button({
+		        name: 'injuredDetail'
+		        ,fieldLabel: '查看伤亡人员详细信息'
+		        ,text: '查看伤亡人员详情'
+		        ,handler: function(){		        	
+		        	var InjuredWin = createInjured_view();
+		        	InjuredWin.show();
+		        }
+		    });
+			//基本信息框
+		    if(1 == type || 3 == type){
+		    var fs_basicInfo_detail = new Ext.form.FieldSet({
+		    	title : '基本信息',
+				name:'fs_basicInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+				layout:'column',
+				border:false,
+				width : '90%',
+				items:[
+				{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_eventName_detail,txt_eventReportDate_detail,txt_eventOccurDate_detail,
+				       txt_eventLocation_detail,txt_reporter_detail]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_reporterPhone_detail,
+				       txt_state_detail,txt_level_detail,txt_style_detail, txt_injuredNum_detail]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .9,
+					items :[button_detail,txt_caseDescription_detail,txt_caseDescri_detail,txt_caseReason_detail,
+				       txt_safeWarning_detail]
+				}
+				]				
+		    });
+		    }
+		    else{
+		        var fs_basicInfo_detail = new Ext.form.FieldSet({
+		    	title : '基本信息',
+				name:'fs_basicInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+				layout:'column',
+				border:false,
+				width : '90%',
+				items:[
+				{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_eventName_detail,txt_eventReportDate_detail,txt_eventOccurDate_detail,
+				       txt_eventLocation_detail, txt_dangerSource_detail, txt_reporter_detail]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_reporterPhone_detail,
+				       txt_state_detail,txt_level_detail,txt_style_detail, txt_injuredNum_detail]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .9,
+					items :[button_detail,txt_caseDescription_detail,txt_caseDescri_detail,txt_caseReason_detail,
+				       txt_safeWarning_detail]
+				}
+				]				
+		    });
+		    }
+		    //附件框
+		    var uploadDocs_detail = new Ext.ux.UploadDialog.Dialog({
+				name:'docs'
+				,url : '/TibetER/servlet/CaseUpload?caseID='+caseID+'&caseType='+type
+				,deleteUrl:'/TibetER/servlet/CaseOperation'// [5.6]
+				,base_params:{
+					action:'deleteAttachment'
+					,field:'filename'//删除时，需要传给后台的参数集
+				}
+				,height : 160
+//				,autoScroll:true
+				,serverDelete:false//[5.9]
+				,width:720
+				,frame:true
+				,autoCreate : true
+//				,parentWindow : win//[4.5]在文件传输完成后自动关闭窗口
+				,hasCheck:false//[3.15]在uploadDialog中新加属性
+				,title : '附件'
+
+		    });
+
+		    
+		    //处置
+		    var fs_dealInfo_detail = new Ext.form.FieldSet({
+		    	title : '处置',
+				name:'fs_deal',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+//				layout:'column',
+				border:false,
+				width : '90%',
+				items :[radio_dealStyle_detail, txt_dealSuggest_detail, radio_dealPerson_detail]
+		    });	
+		    
+		    var fp = new Ext.FormPanel({
+				name:'totalForm'
+//				,id:'win_totalForm'
+				,layout:'form'
+				,autoHeight:true
+				,width:700
+				,items:[fs_basicInfo_detail,fs_dealInfo_detail]
+		    });
+	    	var win_detail = new Ext.Window({
+	    		layout : 'fit',
+			    collapsible : true,
+			    border : false,
+			    shadow : false,
+			    frame : true,	
+			    width : 760,
+			    height : 570,
+			    bodyStyle : 'position:relative', // [3.12]lfm:解决文本框不跟随移动的问题		
+			    autoScroll : true,
+			    draggable : true,// 是否可以拖放			
+			    resizable : true,
+			    buttonAlign : 'center',
+			    items : [fp],
+			    buttons :[
+			    	{ 
+			        	text: '关闭',
+			        	handler : function() {
+				            win_detail.close();
+				    }	
+			    }]
+	    	});
+	    	win_detail.add(uploadDocs_detail);
+	    	return win_detail;
+	    }
+	    ///////////////////////////////////////////////////////////////////////
+	    //编辑窗口
+	    function createEditWindow(type, caseID){
+	    	var txt_eventName_edit = new Ext.form.TextField({
+				name:'caseName'
+				,fieldLabel : '事件主题'
+				,allowBlank : false
+				,width:130
+		    });
+		    var txt_eventOccurDate_edit= new Ext.form.TextField({
+				name:'occuranceTime'
+				,fieldLabel:'发生时间'
+				,allowBlank:false
+				,width:130
+				,readOnly:true
+		    });
+		    var txt_eventReportDate_edit = new Ext.form.TextField({
+				name:'reportTime'
+				,fieldLabel : '上报时间'
+				,allowBlank : false
+				,width:130
+				,readOnly: true
+		    });
+		    var txt_eventLocation_edit = new Ext.form.TextField({
+				name:'occurancePlace'
+				,fieldLabel : '发生地点'
+				,allowBlank : false
+				,width:130
+		    });		 	    
+		    var txt_injuredNum_edit = new Ext.form.TextField({
+				name:'injuredNum'
+				,fieldLabel : '伤亡人数'
+				,allowBlank : false
+				,width:130
+		    });
+		    if(1 == type){
+		        var txt_reporter_edit = new Ext.form.ComboBox({
+//		        	id:'reporter',
+		        	name:'reporter'
+    	            ,fieldLabel: '上报科室'
+    	            ,hiddenName: 'reporter'
+    	            ,displayField: 'department'
+    	            ,valueField: 'department'
+//    	            ,readOnly: true
+//    	            ,editable: false
+    	            ,store: ds_department
+    	            ,triggerAction: 'all'
+    	            ,mode: 'local'
+    	            ,width: 130 
+    	       });
+		        var txt_reporterPhone_edit = new Ext.form.TextField({
+				    name:'reporterPhone'
+				    ,fieldLabel : '科室电话'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		    }
+		    else if(2 == type || 3 == type){
+		        var txt_reporter_edit = new Ext.form.TextField({
+				    name:'reporter'
+				    ,fieldLabel : '上报人'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		        var txt_reporterPhone_edit = new Ext.form.TextField({
+				    name:'reporterPhone'
+				    ,fieldLabel : '上报人电话'
+//				    ,regex:/(^[0-9]{3,4}\-[0-9]{3,8}$)|(^[0-9]{3,8}$)|(^\([0-9]{3,4}\)[0-9]{3,8}$)|(^13\d{9}$)|(^15[0-35-9]\d{8}$)|(^18[05-9]\d{8}$)|((\d{4}|\d{3})-(\d{7,8})\-(\d{1,4})$)|((\d{7,8})\-(\d{1,4})$)/
+//				    ,regexText:'输入的电话号码不合理，支持手机号码、3-4位区号、7-8位直拨号码、1－4位分机号，如13515480958,0891-88032354，0891-88032684-506'
+				    ,width:130
+				    ,readOnly: true
+		        });
+		    }
+		    if(2 == type){
+	            var com_DangerSourceType_edit = new Ext.ux.TreeCombo({
+	            	name:'dangerSource',
+	    	        expandAll:false,
+		            fieldLabel:'危险源',
+		            loader:dstypeLoader,
+		            editable:false,
+		            readOnly:true,
+		            width:130
+	            });
+		    }		   
+		    var txt_state_edit = new Ext.form.TextField({
+				name:'state'
+				,fieldLabel : '事件状态 '
+				,width:130
+				,allowBlank:false
+		    });
+		    var com_eventLevel_edit = new Ext.form.ComboBox({
+		    	id: 'level',
+		    	name: 'level'
+    	        ,fieldLabel: '事件级别'
+    	        ,hiddenName: 'caseLevel'
+    	        ,displayField: 'level'
+    	        ,valueField: 'id'
+    	        ,store: ds_caseLevelList
+//    	        ,editable: false
+    	        ,mode: 'local'
+    	        ,width: 130
+    	    });
+//    	    ds_caseLevelList.load();
+    	var com_eventType_edit = new Ext.ux.TreeCombo({
+    		id: 'caseType',
+    		name: 'caseType',
+		    expandAll:false,//是否在点击combox时将树全部展开
+		    fieldLabel:'事件类型',
+		    loader:typeLoader,
+//		    editable:false,
+		    width:130	
+	    });
+//	        var button_injuredEdit = new Ext.Button({
+//		        name: 'injuredDetail'
+//		        ,fieldLabel: '编辑伤亡人员详细信息'
+//		        ,text: '编辑伤亡人员详情'
+//		        ,handler: function(){		        	
+//		        	var InjuredWin_edit = createInjuredDetailWindow(caseID,type,0,-1);
+//		        	InjuredWin_edit.show();
+//		        }
+//		    });
+		    var txt_caseDescription_edit = new Ext.form.TextArea({
+				name:'caseDescription'
+				,fieldLabel : '事件描述'
+				,grow:true
+				,width:495
+		    });
+		    var txt_caseDescri_edit = new Ext.form.TextArea({
+				name:'caseDescri'
+				,fieldLabel : '事故简介'
+				,grow:true
+				,width:495
+		    });
+		    var txt_caseReason_edit = new Ext.form.TextArea({
+				name:'caseReason'
+				,fieldLabel : '事故原因及分析'
+				,grow:true
+				,width:495
+		    });
+		    var txt_safeWarning_edit = new Ext.form.TextArea({
+				name:'safeWarning'
+				,fieldLabel : '安全提示'
+				,grow:true
+				,width:495
+		    });		    
+		
+			//基本信息框
+		    if(1 == type){
+		    var fs_basicInfo_edit = new Ext.form.FieldSet({
+		    	title : '基本信息',
+				name:'fs_basicInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+				layout:'column',
+				border:false,
+				width : '90%',
+				items:[
+				{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_eventName_edit,txt_eventReportDate_edit,txt_eventOccurDate_edit,
+				       txt_eventLocation_edit, txt_injuredNum_edit]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[ txt_reporter_edit,
+				       txt_state_edit,com_eventLevel_edit,com_eventType_edit ]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .9,
+					items :[txt_caseDescription_edit,txt_caseDescri_edit,txt_caseReason_edit,
+				       txt_safeWarning_edit]
+				}
+				]
+		    });
+		    }else if(2 == type){
+		    	var fs_basicInfo_edit = new Ext.form.FieldSet({
+		    	title : '基本信息',
+				name:'fs_basicInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+				layout:'column',
+				border:false,
+				width : '90%',
+				items:[
+				{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_eventName_edit,txt_eventReportDate_edit,txt_eventOccurDate_edit,
+				       txt_eventLocation_edit,com_DangerSourceType_edit,txt_injuredNum_edit ]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_reporter_edit, txt_reporterPhone_edit,
+				       txt_state_edit,com_eventLevel_edit,com_eventType_edit
+//				       ,button_injuredEdit
+				       ]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .9,
+					items :[txt_caseDescription_edit,txt_caseDescri_edit,txt_caseReason_edit,
+				       txt_safeWarning_edit]
+				}
+				]
+		    });
+		    }else if(3 == type){
+		        var fs_basicInfo_edit = new Ext.form.FieldSet({
+		    	title : '基本信息',
+				name:'fs_basicInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+				layout:'column',
+				border:false,
+				width : '90%',
+				items:[
+				{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[txt_eventName_edit,txt_eventReportDate_edit,txt_eventOccurDate_edit,
+				       txt_eventLocation_edit,txt_injuredNum_edit
+//				       ,button_injuredEdit 
+				       ]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .5,
+					items :[ txt_reporter_edit, txt_reporterPhone_edit,
+				       txt_state_edit,com_eventLevel_edit,com_eventType_edit]
+				},{
+					border : false,
+					layout : 'form',
+					columnWidth : .9,
+					items :[txt_caseDescription_edit,txt_caseDescri_edit,txt_caseReason_edit,
+				       txt_safeWarning_edit]
+				}
+				]
+		    });
+		    }
+		    //附件框
+		    var uploadDocs_edit = new Ext.ux.UploadDialog.Dialog({
+				name:'docs'
+				,url : '/CoalMine/servlet/CaseUploadServlet?caseID='+caseID+'&caseType='+type
+				,deleteUrl:'/TibetER/servlet/CaseOperation'// [5.6]
+				,base_params:{
+					action:'deleteAttachment'
+					,field:'filename'//删除时，需要传给后台的参数集
+				}
+				,height : 160
+//				,autoScroll:true
+				,serverDelete:false//[5.9]
+				,width:720
+				,frame:true
+				,autoCreate : true
+//				,parentWindow : win//[4.5]在文件传输完成后自动关闭窗口
+				,hasCheck:false//[3.15]在uploadDialog中新加属性
+				,title : '附件'
+
+		    });
+		    uploadDocs_edit.on('uploaderror',function(){
+			    Ext.Msg.alert('警告','新上传的文件出错！'
+					+'<br>请检查该上传文件是否为空！<br>您可以重新选择编辑该事件。');
+		    });
+		    uploadDocs_edit.on('uploadfailed',function(){
+			    Ext.Msg.alert('警告','文件操作（添加\删除\清空）失败！请检查网络！');
+		    });
+	
+		    var fp = new Ext.FormPanel({
+				name:'totalForm'
+//				,id:'win_totalForm'
+				,layout:'form'
+				,autoHeight:true
+				,width:700
+				,items:[fs_basicInfo_edit]
+		    });
+		    
+	    	var win_edit = new Ext.Window({
+	    		layout : 'fit',
+			    collapsible : true,
+			    border : false,
+			    shadow : false,
+			    frame : true,	
+			    width : 760,
+			    height : 570,
+			    bodyStyle : 'position:relative', // [3.12]lfm:解决文本框不跟随移动的问题		
+			    autoScroll : true,
+			    draggable : true,// 是否可以拖放			
+			    resizable : true,
+			    buttonAlign : 'center',
+			    items : [fp],
+			    buttons :[{ 
+			        	text: '确定',
+			        	handler : function() {
+				            var flag = fp.getForm().isValid();
+				            if(true == flag){
+				            	fp.getForm().submit({				            	
+				            	    url : '/CoalMine/servlet/CaseOperation',
+				            	    method : 'POST',
+						            params : {
+							            action : 'caseEdit',
+							            cType: type,
+							            CaseID: caseID
+						            },
+						            success: function(request,response){
+						            	uploadDocs_edit.on('serverRemoveComplete',function(){
+									        uploadDocs_edit.onUploadButtonClick();
+								        });
+								        uploadDocs_edit.removeFiles_outside();
+						            	Ext.Msg.alert('提示','完成编辑！');
+						            	win_edit.close();
+						            	refreshCaseInfo(type,caseID);
+						            							            							            							            	
+//						            	var _row = ds_caseList.find('id',records[0].get('id'),0,false);
+//							            if(_row > -1){
+//								            ds_caseList.remove(ds_caseList.getAt(_row));
+//								            ds_caseList.insert(_row,records[0]);
+//							            }
+//						            	var _type = ds_caseList.recordType;
+//                                        var _newTip = new _type({
+//                                          injuredName : txt_injuredName.getValue(),
+//                                          injuredAge : txt_injuredAge.getValue(),
+//					                      injuredSex : radio_injuredSex.getValue(),
+//					                      injuredNation : com_injuredNation.getValue(),
+//				                          injuredScale : com_injuredLevel.getValue(),
+//				                          injuredStyle : com_injuredWork.getValue(),
+//				                          detailCaseStyle : com_injuredDetailStyle.getValue(),
+//				                          workTime : com_injuredWorkTime.getValue(),
+//				                          isHoliday : radio_injuredHoliday.getValue()				                           
+//                                        });
+//                                        ds_caseList.insert(0,_newTip);
+//						            	ds_newCaseList.startAutoRefresh(
+//						                   60//30 s
+//						                   ,{action:'getNewCases'}
+//						                   ,onNewCases//callback
+//						                   ,false
+//					                    );
+					                    //[5.16]
+					                    //	[5.12]刷新事件	
+//					                    ds_newCaseList_idc.startAutoRefresh(
+//						                      60//30 s
+//						                      ,{}
+//						                      ,onNewCases_idc//callback
+//						                      ,false
+//					                    );
+						            	
+						            },
+						            failure: function(){
+						            	Ext.Msg.alert('提示','编辑失败！');
+						            }
+				            	});
+				            }
+				            else
+				                Ext.Msg.alert('警告','请填好所有必填项！');
+			        	}
+				    },{ 
+			        	text: '取消',
+			        	handler : function() {
+				            win_edit.close();
+				    }	
+			    }]
+	    	});
+	    	win_edit.add(uploadDocs_edit);
+	    	
+//	    	//处置编辑或删除之后的刷新函数
+//	    	function getMyReport(type){
+//			ds_myReportCase.load({
+//				params:{
+//					caseID:_myReportCaseID
+//				},
+//				callback:function(records,options){
+//				//符合当前查询条件？插入第一条，如果当前表格页，有下一页？删除最后一条
+//					if(records.length > 0 && true == basicSuitCheck(records[0])){
+//						var _row = -1;
+//						if(1 == type){//插入
+//							_row = 0;
+//							ds_caseList.insert(_row,records[0]);
+//							if((record_start + ds_caseList.getCount()) > Ext.getCmp('pt_paging').pageSize)
+//								ds_caseList.remove(ds_caseList.getAt(ds_caseList.getCount()-1));
+//						}
+//						else{//替换
+//							var _row = ds_caseList.find('id',records[0].get('id'),0,false);
+//							if(_row > -1){
+//								ds_caseList.remove(ds_caseList.getAt(_row));
+//								ds_caseList.insert(_row,records[0]);
+//							}
+//						}
+//						grid_cases.getView().refresh();
+//						grid_cases.getSelectionModel().selectRow(_row);
+//					}
+//				}
+//			});
+//			
+//		}
+	    	
+	    	return win_edit;
+	    }
+	    function basicSuitCheck(record,type){
+		 //caseName
+    	 if(1 == type){
+		    if('' != txt_caseName.getValue()
+				&& -1 == record.get('caseName').indexOf(txt_caseName.getValue()))
+				return false;
+		    if('' != com_reportDepartment.getValue()
+				&& record.get('reprotDepartment') != com_reportDepartment.getValue())
+				return false;
+			//state
+			//[5.21]不能直接“=”比较（考虑预警事件），参见题头说明
+		    if('全部' != com_caseState.getRawValue() && ''!=com_caseState.getValue()
+				&& -1 == record.get('caseState').indexOf(com_caseState.getRawValue()))//[6.12]-1==
+				return false;
+			//arrayEventText为空说明，用户没有点击树形结构。那根据默认值，应该是全部，也就说符合当前搜索条件
+		    if(0 != arrayEventText.length
+					&& -1 == arrayEventText.indexOf(record.get('eventTypeName')))
+				return false;
+
+			//eventLevel (isESP)idc也加了[7.9]
+		    if('全部' != com_eventLevel.getRawValue() && ''!=com_eventLevel.getValue()
+					&& record.get('eventLevelName')!= com_eventLevel.getRawValue())
+				return false;
+					
+			//time
+		    if(('' != time_reportTo.getValue()
+					&& record.get('reportTime') > time_reportTo.getValue())
+				|| ('' != time_reportFrom.getValue()
+					&& record.get('reportTime') < time_reportFrom.getValue()))
+				return false;
+		    } //if type=1
+		else if(2 == type){
+		    if('' != txt_caseName_ds.getValue()
+				&& -1 == record.get('caseName').indexOf(txt_caseName_ds.getValue()))
+				return false;
+		    if('' != com_DangerSourceType.getValue()
+				&& record.get('caseDangerSource') != com_DangerSourceType.getValue())
+				return false;
+			//state
+			//[5.21]不能直接“=”比较（考虑预警事件），参见题头说明
+		    if('全部' != com_caseState_ds.getRawValue() && ''!=com_caseState_ds.getValue()
+				&& -1 == record.get('caseState').indexOf(com_caseState_ds.getRawValue()))//[6.12]-1==
+				return false;
+
+			//arrayEventText为空说明，用户没有点击树形结构。那根据默认值，应该是全部，也就说符合当前搜索条件
+		    if(0 != arrayEventText.length
+					&& -1 == arrayEventText.indexOf(record.get('eventTypeName')))
+				return false;
+
+			//eventLevel (isESP)idc也加了[7.9]
+		    if('全部' != com_eventLevel_ds.getRawValue() && ''!=com_eventLevel_ds.getValue()
+					&& record.get('eventLevelName')!= com_eventLevel_ds.getRawValue())
+				return false;
+					
+			//time
+		    if(('' != time_reportTo_ds.getValue()
+					&& record.get('reportTime') > time_reportTo_ds.getValue())
+				|| ('' != time_reportFrom_ds.getValue()
+					&& record.get('reportTime') < time_reportFrom_ds.getValue()))
+				return false;
+		    }// if type = 2
+		else if(3 == type){
+		    if('' != txt_caseName_duty.getValue()
+				&& -1 == record.get('caseName').indexOf(txt_caseName_duty.getValue()))
+				return false;
+			//reporter
+		    if('' != txt_reporter.getValue()
+				&& record.get('reporter') != txt_reporter.getValue())
+				return false;
+
+		    if('全部' != com_caseState_duty.getRawValue() && ''!=com_caseState_duty.getValue()
+				&& -1 == record.get('caseState').indexOf(com_caseState_duty.getRawValue()))//[6.12]-1==
+				return false;
+			
+			//[7.9]现在是也要考虑子孙节点的所属关系	
+			//arrayEventText为空说明，用户没有点击树形结构。那根据默认值，应该是全部，也就说符合当前搜索条件
+		    if(0 != arrayEventText.length
+					&& -1 == arrayEventText.indexOf(record.get('eventTypeName')))
+				return false;
+
+			//eventLevel (isESP)idc也加了[7.9]
+		    if('全部' != com_eventLevel_duty.getRawValue() && ''!=com_eventLevel_duty.getValue()
+					&& record.get('eventLevelName')!= com_eventLevel_duty.getRawValue())
+				return false;
+					
+			//time
+		    if(('' != time_reportTo_duty.getValue()
+					&& record.get('reportTime') > time_reportTo_duty.getValue())
+				|| ('' != time_reportFrom_duty.getValue()
+					&& record.get('reportTime') < time_reportFrom_duty.getValue()))
+				return false;
+		    }
+		    return true;
+	    }
+	
+	    //刷新列表中某条事件信息
+	    function refreshCaseInfo(type,caseID){
+	        //替换？？
+						            	if(1 == type){ //科室上报的普通案件
+						            	ds_MyCase.load({
+						            	    params:{
+					                            caseID:caseID
+				                            },
+				                            callback:function(records,options){
+				                                //符合当前查询条件？插入第一条，如果当前表格页，有下一页？删除最后一条
+					                            if(records.length > 0 && true == basicSuitCheck(records[0],1)){
+					                            	var _row = -1;
+					                            	var _row = ds_caseList.find('id',records[0].get('id'),0,false);
+							                        if(_row > -1){
+								                        ds_caseList.remove(ds_caseList.getAt(_row));
+								                        ds_caseList.insert(_row,records[0]);
+							                        }
+					                            	grid_cases.getView().refresh();
+						                            grid_cases.getSelectionModel().selectRow(_row);
+					                            }
+				                            }//callback
+						            	})
+						            	}else if(2 == type){    //危险源处上报的案件
+						            	    ds_MyCase_ds.load({
+						            	        params:{
+					                                caseID:caseID
+				                                },
+				                                callback:function(records,options){
+				                                    //符合当前查询条件？插入第一条，如果当前表格页，有下一页？删除最后一条
+					                                if(records.length > 0 && true == basicSuitCheck(records[0],2)){
+					                            	    var _row = -1;
+					                            	    var _row = ds_caseList_ds.find('id',records[0].get('id'),0,false);
+							                            if(_row > -1){
+								                            ds_caseList_ds.remove(ds_caseList_ds.getAt(_row));
+								                            ds_caseList_ds.insert(_row,records[0]);
+							                            }
+					                            	    grid_cases_ds.getView().refresh();
+						                                grid_cases_ds.getSelectionModel().selectRow(_row);
+					                                }
+				                                }//callback
+						            	    })
+						            	}else if(3 == type){    //接警人员处案件
+						            	    ds_MyCase_duty.load({
+						            	        params:{
+					                                caseID:caseID
+				                                },
+				                                callback:function(records,options){
+				                                    //符合当前查询条件？插入第一条，如果当前表格页，有下一页？删除最后一条
+					                                if(records.length > 0 && true == basicSuitCheck(records[0],3)){
+					                            	    var _row = -1;
+					                            	    var _row = ds_caseList_duty.find('id',records[0].get('id'),0,false);
+							                            if(_row > -1){
+								                            ds_caseList_duty.remove(ds_caseList_duty.getAt(_row));
+								                            ds_caseList_duty.insert(_row,records[0]);
+							                            }
+					                            	    grid_cases_duty.getView().refresh();
+						                                grid_cases_duty.getSelectionModel().selectRow(_row);
+					                                }
+				                                }//callback
+						            	    })
+						            	}
+	    }
+	    /////////////////////////////////////////////////////////////////////////
+	    //添加预警案件窗口
+	    function createAddDutyCaseWindow(){
+	        var txt_caseName_duty = new Ext.form.TextField({
+				name:'caseName'
+				,fieldLabel : '事件主题'
+				,allowBlank : false
+				,unitText : '<font color="red"  style="font-weight:bold">（必填）</font>'
+				,width:130
+		    });
+		    var txt_eventOccurDate_duty = new Boat.UI.UnitFieldDate({
+				id : 'occuranceTime',
+				name: 'occuranceTime',
+				fieldLabel : '发生时间'
+//				,unitText : '<font color="red"  style="font-weight:bold">（必填）</font>'
+				,width : 130
+				,allowBlank: false
+		    });
+	        txt_eventOccurDate_duty.on('focus', function() {
+				WdatePicker({
+					el : 'occuranceTime',
+					dateFmt : 'yyyy-MM-dd HH:mm:ss',
+					onpicked : function() {
+					    txt_eventOccurDate_duty.clearInvalid();
+					},
+					maxDate:'#F{$dp.$D(\'time_to\')||\'%y-%M-%d %H:%m:%s\'}'
+			     });
+	        });
+		    var txt_reportTime_duty= new Ext.form.TextField({
+				name:'reportTime'
+				,fieldLabel:'上报时间'
+				,allowBlank:false
+				,value:Ext.util.Format.date(new Date(),'Y-m-d H:i:s')
+				,readOnly: true
+				,width:130
+		    });
+		    txt_reportTime_duty.on('focus', function(){
+    	        WdatePicker({
+    	    	    el: 'time_occurce',
+    	    	    dateFmt: 'yyyy-MM-dd HH:mm:ss',
+    	    	    maxDate: '#F{$dp.$D(\'reportTime\')||\'%y-%M-%d %H:%m:%s\'}'
+    	        });
+    	    });
+		    var txt_eventLocation_duty = new Ext.form.TextField({
+				name:'occurancePlace'
+				,fieldLabel : '发生地点'
+				,allowBlank : false
+				,unitText : '<font color="red"  style="font-weight:bold">（必填）</font>'
+				,width:130
+		    });	
+		    var txt_reporter_duty = new Ext.form.TextField({
+				name:'reporter'
+				,fieldLabel : '上报人'
+				,width:130
+		    });
+		    var txt_reporterPhone_duty = new Ext.form.TextField({
+				name:'reporterPhone'
+				,fieldLabel : '上报人电话'
+				,width:130
+		    });
+		    var txt_caseDescription_duty = new Ext.form.TextArea({
+				name:'caseDescription'
+				,fieldLabel : '事件描述'
+				,grow:true
+				,width:495
+		    });
+		    var txt_RecievePerson = new Ext.form.TextField({
+				name:'recievePerson'
+				,fieldLabel : '接警人'
+				,allowBlank:false
+				,unitText : '<font color="red"  style="font-weight:bold">（必填）</font>'
+				,width:130
+		    });
+		    //基本信息框
+		    var fs_basicInfo_edit = new Ext.form.FieldSet({
+		    	title : '基本信息',
+				name:'fs_basicInfo',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+//				layout:'column',
+				border:false,
+				width : '90%',
+				items:[txt_caseName_duty, txt_eventOccurDate_duty, txt_eventLocation_duty,txt_reportTime_duty, 
+				       txt_reporter_duty, txt_reporterPhone_duty, txt_caseDescription_duty,txt_RecievePerson
+				]
+		    });
+		    
+		    //重大案件中的控件
+		    var txt_injuredNum_duty= new Ext.form.TextField({
+				name:'injuredNum'
+				,fieldLabel : '伤亡人数'
+//				,allowBlank : false
+				,width:130
+		    });
+		    //用hiddenName传值
+		    var com_eventLevel_duty = new Ext.form.ComboBox({
+    	        fieldLabel: '事件级别'
+    	        ,name:'level'
+    	        ,hiddenName: 'caseLevel'
+    	        ,displayField: 'level'
+    	        ,valueField: 'id'
+    	        ,store: ds_caseLevelList
+    	        ,readOnly: true
+    	        ,editable: false
+    	        ,mode: 'local'
+    	        ,width: 190
+    	    });
+//    	    ds_caseLevelList.load();
+    	var com_eventType_duty = new Ext.ux.TreeCombo({
+    		name: 'type',
+		    expandAll:false,//是否在点击combox时将树全部展开
+		    fieldLabel:'事件类型',
+		    loader:typeLoader,
+		    editable:false,
+		    readOnly:true,
+		    width:190	
+	    });
+		    //重大突出事件框		   
+		    var fs_bigCase_duty = new Ext.form.FieldSet({
+		    	title : '重大突发事件',
+				name:'fs_bigCase',
+				autoHeight : true,
+				bodyStyle: 'position:relative',
+//				layout:'column',
+//				layout: 'form',
+				collapsible: true,
+				collapsed: true,
+				border:false,
+				width : '90%',
+				items :[ com_eventType_duty, com_eventLevel_duty, txt_injuredNum_duty
+				]
+		    });
+		    
+		    var fp_duty = new Ext.FormPanel({
+				name:'totalForm'
+//				,id:'win_totalForm'
+//				,layout:'form'
+//				,layout: 'column'
+				,autoHeight:true
+				,width:700
+				,items:[fs_basicInfo_edit,fs_bigCase_duty]
+		    });
+	    	var win_duty = new Ext.Window({
+	    		title : '添加新预警案件',
+	    		layout : 'fit',
+			    collapsible : true,
+			    border : false,
+			    shadow : false,
+			    frame : true,	
+			    width : 700,
+			    height : 500,
+			    bodyStyle : 'position:relative', // [3.12]lfm:解决文本框不跟随移动的问题		
+			    autoScroll : true,
+			    draggable : true,// 是否可以拖放			
+			    resizable : true,
+			    buttonAlign : 'center',
+			    items : [fp_duty],
+			    buttons :[{
+			    	text: '确定',
+			    	handler: function(){
+			    	    var flag = fp_duty.getForm().isValid();
+				        if(true == flag){
+				           fp_duty.getForm().submit({				            	
+				            	url : '/CoalMine/servlet/CaseOperation',
+				            	method : 'POST',
+						        params : {
+							        action : 'caseDutyRecieve'
+						        },
+						        success: function(request,response){
+						            Ext.Msg.alert('提示','添加成功！');
+						            win_duty.close();
+						            grid_cases_duty.getView().refresh();
+						        },
+						        failure: function(){
+						            Ext.Msg.alert('提示','添加失败！');
+						        }
+				            	});
+				            }
+				            else
+				                Ext.Msg.alert('警告','请填好所有必填项！');
+			    	}
+			    },{ 
+			        text: '取消',
+			        handler : function() {
+				        win_duty.close();
+				    }	
+			    }]
+	    	});
+	    	return win_duty;
+	    }
+	    
+	    /////////////////////////////////////////////////////////////////////////
+	    //“处置”按钮事件，type为哪种事件：1为科室日报事件，2为危险源事件，3为值班人员添加的预警案件，以下各按钮事件一样，不赘述
+	    function onDeal(type){
+	    	if(1 == type)
+		        selItems = grid_cases.getSelectionModel().getSelections();
+		    if(2 == type)
+		        selItems = grid_cases_ds.getSelectionModel().getSelections();
+		    if(3 == type)
+		        selItems = grid_cases_duty.getSelectionModel().getSelections();
+		    var _flag = 0;// 标记是否有可以处置的事件
+		    Ext.each(selItems, function(_rec) {
+			    if ('未处置' == _rec.data.caseState) {// [5.7]找到第一个，事件状态是“未处置”的事件
+				    ++_flag;
+				    if (1 == _flag) {
+					    rec=_rec;
+				    }
+			    }
+		    });
+		    if (_flag == 0) {
+		    	Ext.Msg.alert('提示', '请选择一个状态是“未处置”的事件进行处置！');
+			    if(type==1) grid_cases.getSelectionModel().clearSelections();
+			    else if(type==2) grid_cases_ds.getSelectionModel().clearSelections();
+			    else if(type==3) grid_cases_duty.getSelectionModel().clearSelections();			    
+		    }else if(_flag>1||(_flag==1&&selItems.length>1)){
+		        Ext.Msg.confirm('提示：', '一次只能处置一个状态为“未处置”的事件！是否对事件<font color="red">['+rec.data.caseName+']</font>进行处置？', function(btn) {
+						if (btn == 'yes') {
+							if(type == 1) grid_cases.getSelectionModel().clearSelections();
+							else if(type == 2) grid_cases_ds.getSelectionModel().clearSelections();
+							else if(type == 3) grid_cases_duty.getSelectionModel().clearSelections();
+							basicDeal(rec, type);
+						} else {
+							if(type == 1) grid_cases.getSelectionModel().clearSelections();
+							else if(type == 2) grid_cases_ds.getSelectionModel().clearSelections();
+							else if(type == 3) grid_cases_duty.getSelectionModel().clearSelections();
+						}
+				});
+		    }else if(_flag==1){
+		        basicDeal(rec, type);
+		    }
+	    }
+	    //处置原操作
+	    function basicDeal(_rec,type){
+	    	var caseID = _rec.data.id;
+	        var _win = createDealWindow(type,caseID);
+	    	_win.show();
+	    	
+	    	_win.setTitle('处置 -> ' + _rec.data.caseName);
+  	    	fillWindow(_rec, _win, type, 0);
+	    }
+	    //编辑按钮事件
+	    function onEdit(type){
+	    	var selItems = [];
+		    var _needless = [];
+		    if(1 == type)
+		        selItems = grid_cases.getSelectionModel().getSelections();
+		    if(2 == type)
+		        selItems = grid_cases_ds.getSelectionModel().getSelections();
+		    if(3 == type)
+		        selItems = grid_cases_duty.getSelectionModel().getSelections();
+		    for(var _index = 0;_index < selItems.length;){
+			    var _rec = selItems[_index];
+			    if('已办结' == _rec.data.caseState ||  '处置中' == _rec.data.caseState || '已接收' == _rec.data.caseState){
+			        _needless.push(_rec);
+				    selItems.splice(_index,1);
+			    }
+			    else
+				    _index++;
+		    }
+		    var _tip = '只能编辑处于“未处置”状态的事件';
+		    if(_needless.length > 0 ){//创建提示信息
+			    if(selItems.length > 0)
+				    _tip='只能对状态为“未处置”的事件进行编辑！所选记录中有['+_needless.length+']条事件不能编辑，您确定要编辑剩余的['+selItems.length+']个事件吗？';
+			    else {
+			        Ext.Msg.alert('警告','只能对状态为“未处置”的事件进行编辑！您所选的记录都不能进行编辑！');
+			        if(type == 1) grid_cases.getSelectionModel().clearSelections();
+			        else if(type == 2) grid_cases_ds.getSelectionModel().clearSelections();
+			        else if(type == 3) grid_cases_duty.getSelectionModel().clearSelections();
+				    return ;
+			    }
+		    }
+		    if(_needless.length == 0)//
+			    basicEdit(selItems,type);
+		    else
+		    {//必有selItems.length > 0
+			    Ext.Msg.confirm('提示：', _tip
+				    , function(btn) {
+					    if (btn == 'yes') {
+						    basicEdit(selItems,type);
+					} 
+					    else {
+					    	if(type == 1){
+						    grid_cases.getSelectionModel().selectRecords(_needless);
+						    grid_cases.getView().refresh();//!!!!
+					    	}else if(type == 2){
+						    grid_cases_ds.getSelectionModel().selectRecords(_needless);
+						    grid_cases_ds.getView().refresh();//!!!!
+					    	}else if(type == 3){
+						    grid_cases_duty.getSelectionModel().selectRecords(_needless);
+						    grid_cases_duty.getView().refresh();//!!!!
+					    	}
+					    }
+				});
+		    }
+	    }
+	    //原编辑操作
+	    function basicEdit(selItems,type){
+	        Ext.each(selItems, function(_rec) {
+	        	var caseID = _rec.data.id;
+	            var _winEdit = createEditWindow(type, caseID);
+  	    	    _winEdit.show();
+  	    	    
+  	    	    _winEdit.setTitle('事件编辑 -> ' + _rec.data.caseName);
+  	    	    fillWindow(_rec, _winEdit, type, 0);
+	        });
+	    }
+	    
+	    //删除操作
+	    function onDelete(type){
+	    	var selItems = [];
+		    var _delIDs = '';
+		    var _needless = []; //不能删除的记录
+	    	if(1 == type && grid_cases.getSelectionModel().hasSelection())	    	    				        
+		        selItems = grid_cases.getSelectionModel().getSelections();
+		    else if(2 == type && grid_cases_ds.getSelectionModel().hasSelection())
+		        selItems = grid_cases_ds.getSelectionModel().getSelections();
+		    else if(3 == type && grid_cases_duty.getSelectionModel().hasSelection())
+		        selItems = grid_cases_duty.getSelectionModel().getSelections();
+		    else
+			    Ext.Msg.alert('提示：','操作错误！');
+		    for(var _index = 0;_index < selItems.length;){
+		            var _rec = selItems[_index];
+		            if(_rec.data.caseState == '未处置'){
+		                //记录id
+					    _delIDs += _rec.data.id +'#';
+					    _index ++;
+		            }else{
+		                _needless.push(_rec);
+					    selItems.splice(_index,1);
+		            }
+		        }
+		        var _tip = '只能删除状态处于“未处置”状态的事件，确定将选中“未处置”事件删除吗？';//创建提示信息
+		        if(_needless.length > 0){
+		        	if(selItems.length >0){//有可删的有不可删的
+		        	    Ext.MessageBox.show({
+						    title : '删除确认',
+						    msg : _tip,
+						    fn : function(btn) {
+						        if (btn == 'ok')
+							        basicDelete(_delIDs, selItems,type);
+						        else {// 否，取消勾选
+		        	                if(type == 1) grid_cases.getSelectionModel().clearSelections();
+		        	                else if(type == 2) grid_cases_ds.getSelectionModel().clearSelections();
+		        	                else if(type == 3) grid_cases_duty.getSelectionModel().clearSelections();
+		        	                
+						        }
+					        },
+						    buttons : Ext.Msg.OKCANCEL,
+						    icon : Ext.Msg.INFO
+					    });
+		        	}else{  //都不可删
+		        	    Ext.Msg.alert('警告','只能对状态为“未处置”的事件进行删除！所选记录都不能进行删除');
+		        	    if(type == 1) grid_cases.getSelectionModel().clearSelections();
+		        	    else if(type == 2) grid_cases_ds.getSelectionModel().clearSelections();
+		        	    else if(type == 3) grid_cases_duty.getSelectionModel().clearSelections();
+		        	    return;
+		        	}
+		        }else{
+		            Ext.MessageBox.show({
+						title : '删除确认',
+						msg : '如果删除这['+selItems.length+']条事件将无法恢复,您确定吗？',
+						fn : function(btn) {
+							if (btn == 'ok')
+								basicDelete(_delIDs, selItems,type);
+							else {// 否，取消勾选
+								grid_cases.getSelectionModel().selectRecords(_needless);
+								grid_cases.getView().refresh();// !!!!
+							}
+						},
+						buttons : Ext.Msg.OKCANCEL,
+						icon : Ext.Msg.INFO
+					});
+		        }
+	    	
+//	    	else
+//			    Ext.Msg.alert('提示：','请先在要删除的事件所在的行前面打钩！');	    	
+	    }
+	    //具体删除操作
+	    function basicDelete(_delIDs,selItems,type) {
+		    _delIDs = _delIDs.substr(0, _delIDs.length - 1);
+		    Ext.Ajax.request({
+				url : '/CoalMine/servlet/CaseOperation',
+				method : 'POST',
+				params : {
+					action : 'deleteCase',
+					CaseIDs : _delIDs,
+					cType: type
+				},
+				success : function(response) {
+					if(1 == type)
+				        grid_cases.getBottomToolbar().doLoad(0);
+				    if(2 == type)
+				        grid_cases_ds.getBottomToolbar().doLoad(0);
+				    if(3 == type)
+				        grid_cases_duty.getBottomToolbar().doLoad(0);
+				},
+				failure : function(response) {
+					Ext.Msg.alert('警告：', '删除操作失败，请稍后再试...');
+				}
+			});
+	}
+	    
+	    function onDetail(type){
+	    	if(1 == type){
+	    	    var selItems = grid_cases.getSelectionModel().getSelections();		
+		        basicDetail(selItems,1);
+	    	}
+	    	else if(2 == type){
+	    	    var selItems = grid_cases_ds.getSelectionModel().getSelections();		
+		        basicDetail(selItems,2);
+	    	}
+	    	else if(3 == type){
+	    	    var selItems = grid_cases_duty.getSelectionModel().getSelections();		
+		        basicDetail(selItems,3);
+	    	}
+	    }
+	    function addDutyCase(){
+	        var _winAddDuty = createAddDutyCaseWindow();
+	        _winAddDuty.show();
+	    }
+
+	    //具体查看详情方法
+	    function basicDetail(selItems,type){
+	    	Ext.each(selItems,function(_rec){
+	    		var caseID = _rec.data.id;
+	    	    var _winDetail = createDetailWindow(type,caseID);
+	    	    _winDetail.show();
+	    	    _winDetail.setTitle('事件详情查看->'+_rec.data.caseName)
+	    	    fillWindow(_rec, _winDetail, type, 1);
+	    	});	
+	    }
+	    
+	    //fillWindow type指事件类型，operationType指操作-0可编辑，1只查看
+	    function fillWindow(record,window,type,operationType){
+	        if (window && record){
+	            var _form = window.getComponent(0).getForm();
+	            _form.findField('caseName').setValue(record.data.caseName);
+			    _form.findField('occuranceTime').setValue(record.data.occureTime);
+			    _form.findField('occurancePlace').setValue(record.data.location);
+			    _form.findField('reportTime').setValue(record.data.reportTime);
+			    _form.findField('injuredNum').setValue(record.data.caseInjured);			    
+			    _form.findField('state').setValue(record.data.caseState);
+			    
+			    _form.findField('caseDescription').setValue(record.data.caseDescription);
+			    _form.findField('caseDescri').setValue(record.data.caseAbout);
+			    _form.findField('caseReason').setValue(record.data.caseCause);
+			    _form.findField('safeWarning').setValue(record.data.caseReminder);
+			    if(operationType == 1){ //查看详情窗口中有，编辑里面没有
+			        _form.findField('disposeType').setValue(record.data.handleType);
+			        _form.findField('dealSuggest').setValue(record.data.handleDescription);
+			        _form.findField('disposePerson').setValue(record.data.handlePerson);
+			        _form.findField('level').setValue(record.data.eventLevelName);
+			        _form.findField('caseType').setValue(record.data.eventTypeName);
+			        if(1== type){     //查看详情里有科室电话                                                     
+			            _form.findField("reporter").setValue(record.data.reportDepartment);
+			            _form.findField('reporterPhone').setValue(record.data.telephone);
+			        }
+			    }
+			    else{ //编辑、处置窗口中 级别、类型可填
+			    	 _form.findField('caseType').setValue(record.data.eventTypeID);
+//			    	 _form.findField('caseType').setRawValue(record.data.eventTypeName);//!!;
+			    	 _form.findField('level').setRawValue(record.data.eventLevelName);
+			    }
+			    if(1 == type && operationType == 0){            //编辑时是不是不用科室电话？选择好科室后，其电话也定了
+			    	_form.findField("reporter").setValue(record.data.reportDepartment);  //赋科室名
+//			        Ext.getCmp("reporter").setValue(record.data.reportDepartment);
+//			        _form.findField('reporterPhone').setValue(record.data.telephone);
+			    }else if(2 == type){
+			        _form.findField('reporter').setValue(record.data.reporter);
+			        _form.findField('reporterPhone').setValue(record.data.reporterPhone);
+			        _form.findField('dangerSource').setValue(record.data.caseDangerSource);
+			    }else if(3 == type){
+			        _form.findField('reporter').setValue(record.data.reporter);
+			        _form.findField('reporterPhone').setValue(record.data.reporterPhone);
+			    }
+			    
+			    //显示附件
+			    var _temp = record.data.caseAttachment;			
+			    var _grid = window.getComponent(1).getGrid();
+			    if (_temp.length > 0) {
+				    _grid.getBottomToolbar().x_buttons.reset.enable();//[5.8]
+				
+				    var _array = _temp.split(';');				
+				    var _ds_docs = _grid.getStore();
+				    // 一项项的填充附件记录
+				    for (var _index = 0; _index < _array.length; _index++) {
+					    var _file = _array[_index].split(',');
+					    var _recordType = _ds_docs.recordType;
+					    var _new = new _recordType({
+//								id : -1,
+								id : _index//
+								,filename : _file[0]// !!
+								,input_element : ''// [5.5]
+								,note : '已上传'
+								,url : _file[1]// !!
+								,type : 0
+								,state : 1 //
+								,scriptId : -1
+						});
+					_ds_docs.add(_new);
+				    }												
+			    }
+			    if(operationType == 1){  //查看详情的话只能下载
+			        _grid.getBottomToolbar().hide();
+						//下载
+						function fn_download() {
+							if (_grid.getSelectionModel().hasSelection()) {
+								var selItems = [];
+								selItems = _grid.getSelectionModel().getSelections();
+								Ext.each(selItems, function(item) {
+									setTimeout("window.open('../page/planDoc.html?path=" + item.data.url
+													+ "','Download')", 50);
+//									window.open('../page/planDoc.html?path='+item.data.url);
+								});
+							} else
+								Ext.Msg.alert('提示：', '请先在要下载的文档所在行前面打钩！');
+						}
+						var ttbar = _grid.getTopToolbar();
+						ttbar.show();// [5.5]
+						ttbar.addButton({
+							text : '下载',
+							disabled:true,
+							handler : fn_download,
+							iconCls : 'download',
+							scope : this
+						});
+						ttbar.add('-');
+						
+						//[5.8]有选择，才可点击下载.删除和清空在内部已经控制了，
+						_grid.getSelectionModel().on('selectionchange',function(sm){
+								if(sm.hasSelection())
+									ttbar.enable();
+								else
+									ttbar.disable();
+						});
+//						break;
+//			           }
+			    }
+	        }
+	        
+	    }
+	    
+	    ///////////////////////////////////////////////
+	    //	处置状态列中“未处置”红色显示
+	function colorTip(val, metadata, record, rowIndex, columnIndex, store)
+	{
+		var field = grid_cases.getColumnModel().getDataIndex(columnIndex);// 可读性更强
+		switch(field){
+			case 'caseState':{
+					var _val = record.get(field);
+					if('未处置' == _val)
+						return '<b style="color:#ff0000;">' 
+							+ _val+ '</b>';
+					if('处置中' == _val)
+						return '<b style="color:#dddd00;">' 
+							+ _val+ '</b>';
+//					if('已接收' == _val)
+//						return '<b style="color:blue;">' 
+//							+'已上报'+ '</b>';
+							
+					break;
+				}
+				
+			case 'eventLevelName':{
+					var _val = record.get(field);
+					if('I级(特别重大)' == _val)
+						return '<div>'+'<img src="../images/gis/red.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('II级(重大)' == _val)
+						return '<div>'+'<img src="../images/gis/caseinfo.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('III级(较大)' == _val)
+						return '<div>'+'<img src="../images/gis/dangersource.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('IV级(一般)' == _val)
+						return '<div>'+'<img src="../images/gis/blue.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					
+							
+					break;
+				}
+		}		
+		return _val;	
+	}
+	//////////////////////////////////////////////////////////////////////////////////
+	var toolbar = new Ext.Toolbar([ {
+	      text : '处置',
+          iconCls:'deal',
+          disabled: true,
+          handler:function(){
+              onDeal(1);
+          }
+       },{text : '编辑',
+		  iconCls:'edit',
+		  disabled: true,
+		  handler: function(){
+		  	    onEdit(1);
+		  }
+		},{
+		   text : '删除',
+			iconCls:'del',
+			disabled: true,
+			handler: function(){
+			    onDelete(1);
+			}
+		},{
+			id: 'detail_view',
+		    text : '查看详情',
+  			iconCls:'detail'
+  			,disabled: true
+  			,handler: function(){
+  			    onDetail(1);
+  			}
+  		},{
+	           text: '编辑伤亡人员信息',
+	           iconCls: 'add',
+	           disabled: true,
+	           handler: function(){	 
+	           	    var selItems = grid_cases.getSelectionModel().getSelections();
+				    var _flag = 0;// 标记是否有可以处置的事件
+		            Ext.each(selItems, function(_rec) {
+			            if ('未处置' == _rec.data.caseState) {// [5.7]找到第一个，事件状态是“未处置”的事件
+				            ++_flag;
+				            if (1 == _flag) {
+					            rec=_rec;
+				            }
+			            }
+		            });
+		            if (_flag == 0) {
+		    	        Ext.Msg.alert('提示', '只能对状态是“未处置”的事件进行伤亡人员信息编辑！');
+			            grid_cases.getSelectionModel().clearSelections();			   		    
+		            }else if(_flag>1||(_flag==1&&selItems.length>1)){
+//		                Ext.Msg.confirm('提示：', '一次只能编辑一个状态为“未处置”的事件！是否对事件<font color="red">['+rec.data.caseName+']</font>进行处置？', function(btn) {
+				        Ext.Msg.alert('提示', '只能对一件“未处置”的事件进行伤亡人员信息编辑！');
+				        grid_cases.getSelectionModel().clearSelections();		
+		            }else if(_flag==1){
+		                var caseID = rec.data.id;
+	    	            var _win_injured = createInjuredDetailWindow(caseID,1,0,-1);
+				        _win_injured.show();
+	    	            _win_injured.setTitle('伤亡人员信息->'+rec.data.caseName)
+		            }
+			     }		//function
+	        }
+ 	]); 
+	//科室日报列表框
+	    var sm = new Ext.grid.CheckboxSelectionModel({singleSelect:false,width:25});
+	    var grid_cases = new Ext.grid.GridPanel({
+//	    	id: 'grid_cases',
+	        anchor: '100% 69%',
+	        title: '科室日报事件列表',
+	        tbar: toolbar ,
+	        autoScroll: true,
+//	        collapsible: true,
+	        loadMask: true,
+	        viewConfig:{
+	        	forceFit: true
+	        	,emptyText: '没有匹配的记录！'
+	        }
+	        ,sm:sm,
+	        store: ds_caseList
+	        ,columns:[
+	            new Ext.grid.RowNumberer({
+	                renderer:function(value,metadata,record,rowIndex){
+	                	return record_start + 1 + rowIndex;
+	                }
+	            }),
+	            sm
+	            ,{header: '事件名称', dataIndex: 'caseName', sortable: true}
+	            ,{header: '事发时间', dataIndex:'occureTime', sortable:true}
+                ,{header: '事发地点', dataIndex:'location', sortable:true}               
+                ,{header: '上报时间', dataIndex:'reportTime', sortable:true}
+                ,{header: '上报科室', dataIndex:'reportDepartment', sortable:true}
+                ,{header: '报告人', dataIndex:'reporter', sortable:true}
+                ,{header: '事件状态', dataIndex:'caseState', sortable:true
+                	,renderer:colorTip}//[5.13]colorTip
+                ,{header: '事件级别', dataIndex:'eventLevelName', sortable:true
+                	,renderer:colorTip}
+                ,{header: '事件类型', dataIndex:'eventTypeName', sortable:true}
+	        ]
+	        ,bbar: new Ext.PagingToolbar({
+	            id: 'pt_paging'
+	            ,pageSize: 10
+	            ,store: ds_caseList
+	            ,plugins: new Ext.ux.grid.PageSizePlugin()
+	            ,firstText: '首页'
+	            ,prevText: '上一页'
+	            ,nextText: '下一页'
+	            ,lastText: '尾页'
+	            ,beforePageText: '第'
+	            ,afterPageText:'/{0}页'
+				,displayInfo:true
+				,displayMsg:'当前页显示第 {0} - {1} 个事件记录，共 {2}个事件'
+				,emptyMsg: '<b style="color:red;">没有事件记录！</b>'
+				,doLoad: function(start){
+					record_start = start;
+					var o = {}, pn = this.paramNames;
+					o[pn.start] = start;
+					o[pn.limit] = this.pageSize;
+					this.store.load({params: o});
+				}
+				,updateInfo: function(){
+					if(this.displayEl){
+						//新来的事件可能会导致第一页有多于10个的事件
+						var count = this.store.getCount();
+						var total = this.store.getTotalCount();
+						
+						if(count > this.pageSize)
+           					total += count - this.pageSize;
+           				else
+           					if(this.cursor + count > total)           					
+           						total = this.cursor + count;
+           						
+           				var msg = count == 0 ? this.emptyMsg : String.format(this.displayMsg
+            					, this.cursor + 1, this.cursor + count
+            					, total);//!!!
+           
+            			this.displayEl.update(msg);
+					}
+				}
+	        })
+	        ,renderTo: Ext.getBody()
+	    });
+	    //按钮控制
+	    sm.on('selectionchange',function(sm){
+		    if(sm.hasSelection())
+			    grid_cases.getTopToolbar().enable();
+			else
+			    grid_cases.getTopToolbar().disable();
+	    });
+	
+	
+	    sm.on('rowselect',function(sm,rowIndex,record){
+    	    var _id = record.get('id');
+    	    if(false == Ext.isEmpty(_id))
+    		    rewindSelections.push(_id);
+        });
+    
+        sm.on('rowdeselect',function(sm,rowIndex,record){
+    	    var _id = record.get('id');
+    	    if(false == Ext.isEmpty(_id)){
+    		    var _idx = rewindSelections.indexOf(record.get('id'));
+    		    if(_idx > -1)
+    			    rewindSelections.splice(_idx,1);
+    	    }
+    	    if(rewindSelections.length == 0)
+    		    grid_cases.getTopToolbar().disable();
+        });
+	    ////////////////////////////////////////////////////////
+	    //危险源选项卡
+	    var toolbar_ds = new Ext.Toolbar([ {
+	          text : '处置',
+              iconCls:'deal',
+              disabled: true,
+              handler:function(){
+                  onDeal(2);
+              }
+           },{text : '编辑',
+		      iconCls:'edit',
+		      disabled: true,
+		      handler: function(){
+		          onEdit(2);
+		      }
+		   },{
+		      text : '删除',
+			  iconCls:'del',
+			  disabled: true,
+			  handler: function(){
+			      onDelete(2);
+			  }
+		   },{text : '查看详情',
+  			  iconCls:'detail',
+  			  disabled: true,
+  			  handler: function(){
+  			      onDetail(2);
+  			  }
+		   },{
+	           text: '编辑伤亡人员信息',
+	           iconCls: 'add',
+	           disabled: true,
+	           handler: function(){	 
+	           	    var selItems = grid_cases_ds.getSelectionModel().getSelections();
+				    var _flag = 0;// 标记是否有可以处置的事件
+		            Ext.each(selItems, function(_rec) {
+			            if ('未处置' == _rec.data.caseState) {// [5.7]找到第一个，事件状态是“未处置”的事件
+				            ++_flag;
+				            if (1 == _flag) {
+					            rec=_rec;
+				            }
+			            }
+		            });
+		            if (_flag == 0) {
+		    	        Ext.Msg.alert('提示', '只能对状态是“未处置”的事件进行伤亡人员信息编辑！');
+			            grid_cases_ds.getSelectionModel().clearSelections();			   		    
+		            }else if(_flag>1||(_flag==1&&selItems.length>1)){
+//		                Ext.Msg.confirm('提示：', '一次只能编辑一个状态为“未处置”的事件！是否对事件<font color="red">['+rec.data.caseName+']</font>进行处置？', function(btn) {
+				        Ext.Msg.alert('提示', '只能对一件“未处置”的事件进行伤亡人员信息编辑！');
+				        grid_cases_ds.getSelectionModel().clearSelections();		
+		            }else if(_flag==1){
+		                var caseID = rec.data.id;
+	    	            var _win_injured = createInjuredDetailWindow(caseID,2,0,-1);
+				        _win_injured.show();
+	    	            _win_injured.setTitle('伤亡人员信息->'+rec.data.caseName)
+		            }
+			     }		//function
+	        }
+ 	    ]); 
+ 	    
+ 	    ///////////////////////////////////////////////
+	    //	处置状态列中“未处置”红色显示
+	    function colorTip_ds(val, metadata, record, rowIndex, columnIndex, store)
+	    {
+		    var field = grid_cases_ds.getColumnModel().getDataIndex(columnIndex);// 可读性更强
+		    switch(field){
+			   case 'caseState':{
+					var _val = record.get(field);
+					if('未处置' == _val)
+						return '<b style="color:#ff0000;">' 
+							+ _val+ '</b>';
+					if('处置中' == _val)
+						return '<b style="color:#dddd00;">' 
+							+ _val+ '</b>';
+//					if('已接收' == _val)
+//						return '<b style="color:blue;">' 
+//							+'已上报'+ '</b>';
+							
+					break;
+				}
+				
+			case 'eventLevelName':{
+					var _val = record.get(field);
+					if('I级(特别重大)' == _val)
+						return '<div>'+'<img src="../images/gis/red.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('II级(重大)' == _val)
+						return '<div>'+'<img src="../images/gis/caseinfo.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('III级(较大)' == _val)
+						return '<div>'+'<img src="../images/gis/dangersource.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('IV级(一般)' == _val)
+						return '<div>'+'<img src="../images/gis/blue.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					
+							
+					break;
+				}
+		    }		
+		    return _val;	
+  	    }
+	    var sm_ds = new Ext.grid.CheckboxSelectionModel({singleSelect:false,width:25});
+	    var grid_cases_ds = new Ext.grid.GridPanel({
+//	    	id: 'grid_cases_ds',
+	        anchor: '100% 69%',
+	        //width: Ext.get('fs_search_ds').width,
+
+	        title: '危险源上报事件列表',
+	        tbar: toolbar_ds,
+	        autoScroll: true,
+	        //collapsible: true,
+	        loadMask: true,
+//	        bodyStyle: 'width:100%',
+//	        autoWidth:true,
+//	        hideMode:"offsets",
+	        viewConfig:{
+	            forceFit: true,
+	            emptyText: '没有匹配的记录！'
+	        },
+	        sm: sm_ds,
+	        store: ds_caseList_ds,
+	        columns:[
+				new Ext.grid.RowNumberer({renderer:function(value,metadata,record,rowIndex){
+　　　           				return　record_start_ds　+　1　+　rowIndex;
+　　         			 	}
+				})
+                ,sm_ds
+                ,{header: '事件名称', dataIndex:'caseName', sortable:true}
+                ,{header: '事发时间', dataIndex:'occureTime', sortable:true}
+                ,{header: '危险源', dataIndex:'caseDangerSource', sortable:true}
+                ,{header: '上报人', dataIndex: 'reporter',sortable: true}
+                ,{header: '上报时间', dataIndex: 'reportTime', sortable: true}
+                ,{header: '事件状态', dataIndex:'caseState', sortable:true
+                	,renderer:colorTip_ds}//[5.13]colorTip
+                ,{header: '事件级别', dataIndex:'eventLevelName', sortable:true
+                	,renderer:colorTip_ds}//[5.13]colorTip
+                ,{header: '事件类型', dataIndex:'eventTypeName', sortable:true}
+            ],
+            bbar:new Ext.PagingToolbar({
+				id:'pt_paging_ds',
+				pageSize:10,
+				store:ds_caseList_ds,
+				plugins : new Ext.ux.grid.PageSizePlugin(),
+				firstText : "首页",
+				prevText : "上一页",
+				nextText : "下一页",
+				lastText : "尾页",
+				beforePageText:'第',
+				afterPageText:'/{0}页',
+				displayInfo:true,
+				displayMsg:'当前页显示第 {0} - {1} 个事件记录，共 {2}个事件',
+				emptyMsg: '<b style="color:red;">没有事件记录！</b>',
+				doLoad　:　function(start){//[5.8]编号问题
+　　　                                                                   record_start_ds　=　start;
+　　　　　　　　　　                               var　o　=　{},　pn　=　this.paramNames;
+　　　　　　　　　　                              o[pn.start]　=　start;
+　　　　　　　　　　                              o[pn.limit]　=　this.pageSize;
+　　　　　　　　　　                              this.store.load({params:o});
+　　　　　                     },
+				updateInfo: function(){//!!
+         			if(this.displayEl){
+         				//新来的事件可能会导致第一页有多于10个的事件
+            			var count = this.store.getCount();           			
+           				var total = this.store.getTotalCount();
+           				
+           				if(count > this.pageSize)
+           					total += count - this.pageSize;
+           				else
+           					if(this.cursor + count > total)           					
+           						total = this.cursor + count;
+           					
+           					
+            			var msg = count == 0 ? this.emptyMsg : String.format(this.displayMsg
+            					, this.cursor + 1, this.cursor + count
+            					, total);//!!!
+    
+            			this.displayEl.update(msg);
+        			}
+     			}
+			})
+	    });
+	    //把控制放到这里！
+	    sm_ds.on('selectionchange',function(sm){
+		    if(sm.hasSelection())
+			    grid_cases_ds.getTopToolbar().enable();
+			else
+			    grid_cases_ds.getTopToolbar().disable();
+	    });
+	
+	
+	    sm_ds.on('rowselect',function(sm_ds,rowIndex,record){
+    	    var _id = record.get('id');
+    	    if(false == Ext.isEmpty(_id))
+    		    rewindSelections.push(_id);
+        });
+    
+        sm_ds.on('rowdeselect',function(sm_ds,rowIndex,record){
+    	    var _id = record.get('id');
+    	    if(false == Ext.isEmpty(_id)){
+    		    var _idx = rewindSelections.indexOf(record.get('id'));
+    		    if(_idx > -1)
+    			    rewindSelections.splice(_idx,1);
+    	    }
+    	    if(rewindSelections.length == 0)
+    		    grid_cases_ds.getTopToolbar().disable();
+        });
+	    //////////////////////////////////////////////////////////////
+	    //接警案件选项卡
+	    var toolbar_duty = new Ext.Toolbar([ 
+	        {
+	           id: 'recieve_dutycase_bt',
+	           text: '接警新案件',
+	           iconCls: 'add',
+	           handler: addDutyCase
+	        },{
+	           text : '处置',
+               iconCls:'deal',
+               disabled:true,
+               handler:function(){
+                   onDeal(3);
+               }
+            },{text : '编辑',
+		       iconCls:'edit',
+		       disabled: true,
+		       handler: function(){
+		           onEdit(3);
+		       }
+		    },{
+		       text : '删除',
+			   iconCls:'del',
+			   disabled: true,
+			   handler: function(){
+			       onDelete(3);
+			   }
+		    },{text : '查看详情',
+  			    iconCls:'detail',
+  			    disabled: true,
+  			    handler: function(){
+  			        onDetail(3);
+  			    }
+  			},{
+	           text: '编辑伤亡人员信息',
+	           iconCls: 'add',
+	           disabled: true,
+	           handler: function(){	   
+//	           	            var selItems = grid_cases_duty.getSelectionModel().getSelections();
+//	           	            Ext.each(selItems,function(_rec){
+//	    		                var caseID = _rec.data.id;
+//	    	                    var _win_injured = createInjuredDetailWindow(caseID,3,0,-1);
+//				                _win_injured.show();
+//	    	                    _win_injured.setTitle('伤亡人员信息->'+_rec.data.caseName)
+////	    	                    fillWindow(_rec, _winDetail, type, 1);
+//	    	                });	
+				    var selItems = grid_cases_duty.getSelectionModel().getSelections();
+				    var _flag = 0;// 标记是否有可以处置的事件
+		            Ext.each(selItems, function(_rec) {
+			            if ('未处置' == _rec.data.caseState) {// [5.7]找到第一个，事件状态是“未处置”的事件
+				            ++_flag;
+				            if (1 == _flag) {
+					            rec=_rec;
+				            }
+			            }
+		            });
+		            if (_flag == 0) {
+		    	        Ext.Msg.alert('提示', '只能对状态是“未处置”的事件进行伤亡人员信息编辑！');
+			            grid_cases_duty.getSelectionModel().clearSelections();			   		    
+		            }else if(_flag>1||(_flag==1&&selItems.length>1)){
+//		                Ext.Msg.confirm('提示：', '一次只能编辑一个状态为“未处置”的事件！是否对事件<font color="red">['+rec.data.caseName+']</font>进行处置？', function(btn) {
+				        Ext.Msg.alert('提示', '只能对一件“未处置”的事件进行伤亡人员信息编辑！');
+				        grid_cases_duty.getSelectionModel().clearSelections();		
+		            }else if(_flag==1){
+		                var caseID = rec.data.id;
+	    	            var _win_injured = createInjuredDetailWindow(caseID,3,0,-1);
+				        _win_injured.show();
+	    	            _win_injured.setTitle('伤亡人员信息->'+rec.data.caseName)
+		            }   
+				        }		//function
+	        }
+ 	    ]); 
+ 	    
+ 	    ///////////////////////////////////////////////
+	    //	处置状态列中“未处置”红色显示
+	    function colorTip_duty(val, metadata, record, rowIndex, columnIndex, store)
+	    {
+		    var field = grid_cases_duty.getColumnModel().getDataIndex(columnIndex);// 可读性更强
+		    switch(field){
+			    case 'caseState':{
+					var _val = record.get(field);
+					if('未处置' == _val)
+						return '<b style="color:#ff0000;">' 
+							+ _val+ '</b>';
+					if('处置中' == _val)
+						return '<b style="color:#dddd00;">' 
+							+ _val+ '</b>';
+//					if('已接收' == _val)
+//						return '<b style="color:blue;">' 
+//							+'已上报'+ '</b>';
+							
+					break;
+				}
+				
+			case 'eventLevelName':{
+					var _val = record.get(field);
+					if('I级(特别重大)' == _val)
+						return '<div>'+'<img src="../images/gis/red.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('II级(重大)' == _val)
+						return '<div>'+'<img src="../images/gis/caseinfo.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('III级(较大)' == _val)
+						return '<div>'+'<img src="../images/gis/dangersource.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					if('IV级(一般)' == _val)
+						return '<div>'+'<img src="../images/gis/blue.gif"  alt=""/>'+'<b style="color:#ff0000;">' 
+							+ _val+ '</b>'+'</div>';
+					
+							
+					break;
+				}
+		    }		
+		    return _val;	
+  	    }
+	    var sm_duty = new Ext.grid.CheckboxSelectionModel({singleSelect:false,width:25});
+	    var grid_cases_duty = new Ext.grid.GridPanel({
+//	    	id: 'grid_cases_duty',
+	        anchor:'100% 69%',
+	        title: '接警重大案件列表',
+	        tbar: toolbar_duty,
+//	        autoScroll: true,
+	       // collapsible: true,
+	        loadMask: true,
+	        viewConfig:{
+	            forceFit: true,
+	            emptyText: '没有匹配的记录！'
+	        },
+	        sm: sm_duty,
+	        store: ds_caseList_duty,
+	        columns:[
+				new Ext.grid.RowNumberer({renderer:function(value,metadata,record,rowIndex){
+　　　           				return　record_start_duty　+　1　+　rowIndex;
+　　         			 	}
+				})
+                ,sm_duty
+                ,{header: '事件名称', dataIndex:'caseName', sortable:true}
+                ,{header: '事发时间', dataIndex:'occureTime', sortable:true}
+                ,{header: '事发地点', dataIndex:'location', sortable:true}
+                ,{header: '上报人', dataIndex: 'reporter',sortable: true}
+                ,{header: '上报时间', dataIndex: 'reportTime', sortable: true}
+                ,{header: '事件状态', dataIndex:'caseState', sortable:true
+                	,renderer:colorTip_duty}//[5.13]colorTip
+                ,{header: '事件级别', dataIndex:'eventLevelName', sortable:true
+                	,renderer:colorTip_duty}//[5.13]colorTip
+                ,{header: '事件类型', dataIndex:'eventTypeName', sortable:true}
+            ],
+            bbar:new Ext.PagingToolbar({
+				id:'pt_paging_duty',
+				pageSize:10,
+				store:ds_caseList_duty,
+				plugins : new Ext.ux.grid.PageSizePlugin(),
+				firstText : "首页",
+				prevText : "上一页",
+				nextText : "下一页",
+				lastText : "尾页",
+				beforePageText:'第',
+				afterPageText:'/{0}页',
+				displayInfo:true,
+				displayMsg:'当前页显示第 {0} - {1} 个事件记录，共 {2}个事件',
+				emptyMsg: '<b style="color:red;">没有事件记录！</b>',
+				doLoad　:　function(start){
+　　　                                                                   record_start_duty　=　start;
+　　　　　　　　　　                               var　o　=　{},　pn　=　this.paramNames;
+　　　　　　　　　　                              o[pn.start]　=　start;
+　　　　　　　　　　                              o[pn.limit]　=　this.pageSize;
+　　　　　　　　　　                              this.store.load({params:o});
+　　　　　                     },
+				updateInfo: function(){//!!
+         			if(this.displayEl){
+         				//新来的事件可能会导致第一页有多于10个的事件
+            			var count = this.store.getCount();           			
+           				var total = this.store.getTotalCount();
+           				if(count > this.pageSize)
+           					total += count - this.pageSize;
+           				else
+           					if(this.cursor + count > total)           					
+           						total = this.cursor + count;         					
+            			var msg = count == 0 ? this.emptyMsg : String.format(this.displayMsg
+            					, this.cursor + 1, this.cursor + count
+            					, total);//!!!    
+            			this.displayEl.update(msg);
+        			}
+     			}
+			})
+	    });
+	    //把控制放到这里！
+        sm_duty.on('selectionchange',function(sm){
+		    if(sm.hasSelection())
+			    grid_cases_duty.getTopToolbar().enable();
+			else
+			    grid_cases_duty.getTopToolbar().disable();
+			    Ext.getCmp('recieve_dutycase_bt').enable();
+	    });
+	
+	
+	    sm_duty.on('rowselect',function(sm,rowIndex,record){
+    	    var _id = record.get('id');
+    	    if(false == Ext.isEmpty(_id))
+    		    rewindSelections.push(_id);
+        });
+    
+        sm_duty.on('rowdeselect',function(sm,rowIndex,record){
+    	    var _id = record.get('id');
+    	    if(false == Ext.isEmpty(_id)){
+    		    var _idx = rewindSelections.indexOf(record.get('id'));
+    		    if(_idx > -1)
+    			    rewindSelections.splice(_idx,1);
+    	    }
+    	    if(rewindSelections.length == 0)
+    		    grid_cases_duty.getTopToolbar().disable();
+    		    Ext.getCmp('recieve_dutycase_bt').enable();
+        });
+	    //////////////////////////////////////////////////////
+	    //单个选项卡的panel
+	    var panel_cases = new Ext.Panel({
+	    	title: '科室上报事故'
+	    	,layout:'anchor'
+	        ,items:[fs_search, grid_cases]
+	    });
+	    var panel_cases_ds = new Ext.Panel({	    	
+	    	title: '危险源处上报事件'
+//	    	,hideMode: 'offsets'
+	    	,layout: 'anchor'
+	        ,items:[fs_search_ds, grid_cases_ds]
+	    });
+	    var panel_cases_duty = new Ext.Panel({
+	    	height:'100%',
+	    	title: '接警重大突发事件'
+	    	,layout: 'anchor'
+	        ,items:[fs_search_duty, grid_cases_duty]
+	    });
+	    //选项卡
+	    var tab_search = new Ext.TabPanel({
+			region:'center',
+			activeTab:0,			
+//			style:'padding:10px 10px 10px 10px',
+//			layout: 'fit',
+			enableTabScroll:true, 
+			minTabWidth: 200, 
+			autoScroll:true,
+			plain:true,
+			layoutOnTabChange: true,               //切换tab页时重新布局
+			deferredRender:true,//!!!
+			items:[panel_cases, panel_cases_ds, panel_cases_duty]
+	    });
+	    /////////////////////////////////////////////////////
+	    var aa = new Ext.Viewport({
+		    renderTo:Ext.getBody(),
+//		    layout:'border',
+		    layout: 'fit',
+		    items:[{
+			    region:'center'
+//			    ,layout:'form'
+			    ,layout:'fit'
+			    ,split:true
+			    ,autoScroll:true
+			    ,bodyStyle: 'position:relative'
+			    ,items:[tab_search]
+			}]
+	    });
+	    
+	    aa.on('beforeshow',function(view){	
+
+	    ds_caseList.load({
+	        params:{
+				start:0
+				,limit:Ext.getCmp('pt_paging').pageSize
+		    }
+	    });
+	    ds_caseList_ds.load({
+	        params:{
+				start:0
+				,limit:Ext.getCmp('pt_paging_ds').pageSize
+		    }
+	    });
+	    ds_caseList_duty.load({
+	        params:{
+				start:0
+				,limit:Ext.getCmp('pt_paging_duty').pageSize
+		    }
+	    });
+//	    ds_injuredList.load();
+//		ds_caseLevelList.load({
+//			callback:function(r,options,success){
+//				if(true == success){
+//					var _type = ds_caseLevelList.recordType;
+//					var _item = new _type({
+//						id:-1,
+//						level:'全部'
+//					});
+//					ds_caseLevelList.insert(0,_item);
+//					
+////					com_eventLevel.setValue(-1);
+//				}
+//			}
+//		});
+//	    ds_caseLevelList.load();
+	    //给查询条件设定默认值
+		com_caseState.setValue(-1);
+		com_eventLevel.setValue("全部");
+		com_reportDepartment.setValue("全部");
+		com_caseState_ds.setValue(-1);
+		com_eventLevel_ds.setValue("全部");
+		com_caseState_duty.setValue(-1);
+		com_eventLevel_duty.setValue("全部");
+	});	    	    
+	    aa.show();
+    }
+    Ext.onReady(EmergencyDuty);

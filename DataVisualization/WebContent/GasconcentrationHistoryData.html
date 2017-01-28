@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>瓦斯浓度历史数据</title>
+<link rel="stylesheet" href="../css/jquery-ui.css">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../js/jquery-3.1.1.js"></script>
+<script src="../js/jquery-ui.js"></script>
+<script src="../js/spin.js"></script>
+<script src="../js/SuperMap.Include.js"></script>
+<script type="text/javascript">
+	//声明变量map、layer、url
+	var map, layer, heatMapLayer, url = "http://192.168.109.207:8090/iserver/services/map-Mining2/rest/maps/road@某矿";
+	var url_localhost="http://localhost:8090/iserver/services/map-Mining/rest/maps/road@某矿";
+	//按时间存储链表
+	var temperatureDateList = [];
+	//为datepicker提供参数
+	var start_date,end_date,start_dateObj,end_dateObj;	
+	//spinner
+	var opts = {            
+            lines: 13, // 花瓣数目
+            length: 20, // 花瓣长度
+            width: 10, // 花瓣宽度
+            radius: 30, // 花瓣距中心半径
+            corners: 1, // 花瓣圆滑度 (0-1)
+            rotate: 0, // 花瓣旋转角度
+            direction: 1, // 花瓣旋转方向 1: 顺时针, -1: 逆时针
+            color: '#000000', // 花瓣颜色
+            speed: 1, // 花瓣旋转速度
+            trail: 60, // 花瓣旋转时的拖影(百分比)
+            shadow: false, // 花瓣是否显示阴影
+            hwaccel: false, //spinner 是否启用硬件加速及高速旋转            
+            className: 'spinner', // spinner css 样式名称
+            zIndex: 2e9, // spinner的z轴 (默认是2000000000)
+            top: 'auto', // spinner 相对父容器Top定位 单位 px
+            left: 'auto'// spinner 相对父容器Left定位 单位 px
+        };
+    var spinner = new Spinner(opts);
+	
+    //datepicker
+	$(function() {
+    $("#start_datepicker").datepicker({
+      showOtherMonths: true,
+      selectOtherMonths: true,
+      dateFormat:"yy-mm-dd",
+      onSelect: function(selectedDate) {//选择日期后执行的操作 
+	    	 start_date=selectedDate;
+             start_dateObj=new Date(start_date).getTime();
+             }
+     });
+    });
+	$(function() {
+	    $("#end_datepicker").datepicker({
+	      showOtherMonths: true,
+	      selectOtherMonths: true,
+	      dateFormat:"yy-mm-dd",
+	      onSelect: function(selectedDate) {//选择日期后执行的操作 
+	    	 end_date=selectedDate;
+	    	 end_dateObj=new Date(end_date).getTime();
+	    	 }
+	    });
+	 });
+	//当前时间参数
+	var current_day=1,current_hour=0,current_frame=0,current_minsec="00:00";
+	//创建地图控件
+	function init() {
+		map = new SuperMap.Map("map");
+		//创建分块动态REST图层，该图层显示iserver 8C 服务发布的地图,
+		//其中"world"为图层名称，url图层的服务地址，{transparent: true}设置到url的可选参数
+		layer = new SuperMap.Layer.TiledDynamicRESTLayer("road@某矿", url, null,
+				{
+					maxResolution : "auto"
+				});
+		heatMapLayer = new SuperMap.Layer.HeatMapLayer("heatMap", {
+			"featureWeight" : "value",
+			"featureRadius" : "geoRadius",
+			"maxWeight" : 1,
+			"minWeight" : 0,
+		});
+		layer.events.on({
+			"layerInitialized" : addLayer
+		});
+	}
+	function addLayer() {
+		//将Layer图层加载到Map对象上
+		map.addLayers([ layer, heatMapLayer]);
+		//出图，map.setCenter函数显示地图
+		map.setCenter(new SuperMap.LonLat(450, 150), 0);
+	}
+	function FanpressureEntity(position_id,x_point,y_point,date,value){
+		this.position_id=position_id;
+		this.x_point=x_point;
+		this.y_point=y_point;
+		this.date=date;
+		this.value=value;
+	}
+	//format date
+	Date.prototype.Format = function (fmt) {  
+	    var o = {
+	        "M+": this.getMonth() + 1, //月份 
+	        "d+": this.getDate(), //日 
+	        "h+": this.getHours(), //小时 
+	        "m+": this.getMinutes(), //分 
+	        "s+": this.getSeconds(), //秒 
+	        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+	        "S": this.getMilliseconds() //毫秒 
+	    };
+	    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+	    for (var k in o)
+	    if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+	    return fmt;
+	}
+	//Data_Array
+	var id_Array = [], x_Array = [], y_Array = [], value_Array = [];
+	var isCreated=false;
+	var str="",num=0;
+	function getData() {
+		if(arguments.length==2){
+			str=arguments[0].toString();
+			num=arguments[1];
+// 			var date=new Date(start_dateObj+(current_day-1)*86400000);;
+// 			var date_str=date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate()+" "+current_hour+":"+current_minsec;
+			var date=new Date(start_dateObj+(current_day-1)*86400000).Format("yyyy-MM-dd hh:mm:ss");
+			var date_str=date+"";
+			$.ajax({
+				type : 'post',
+				url : 'GetTemperatureHistoryData.jsp',
+				data : {date:date_str},
+				dataType : 'json',
+	            success : function(data) {
+					for (var i = 0; i < 50; i++) {
+						id_Array[i] = data[i].position_id;
+						x_Array[i] = data[i].x_point;
+						y_Array[i] = data[i].y_point;
+						value_Array[i] = data[i].value;
+					}
+					createHeatPoints();
+					if(str=="day"){
+						$("#slider-range-min_day").slider("value",num);
+						  $( "#amount_day" ).val( num );
+					}else if(str=="hour"){
+						$("#slider-range-min_hour").slider("value",num);
+						  $( "#amount_hour" ).val( num );
+					}else if(str=="frames"){
+						$("#slider-range-min_frames").slider("value",num);
+						  $( "#amount_frames" ).val( getTime(num) );
+					}else{
+						console.log(str);
+					}
+				}
+			});
+		}
+		else{
+// 			var date=new Date(start_dateObj+(current_day-1)*86400000);;
+// 			var date_str=date.getFullYear()+"-"+(date.getMonth()+1)+"-"+date.getDate()+" "+current_hour+":"+current_minsec;
+			var date=new Date(start_dateObj+(current_day-1)*86400000).Format("yyyy-MM-dd hh:mm:ss");
+			var date_str=date+"";
+			//console.log(date_str);
+			$.ajax({
+				type : 'post',
+				url : 'GetTemperatureHistoryData.jsp',
+				data : {date:date_str},
+				dataType : 'json',
+				beforeSend: function () {
+	                 var target = document.getElementById("spinner");
+	                 spinner.spin(target);                    
+	             },
+	            success : function(data) {
+					for (var i = 0; i < 50; i++) {
+						id_Array[i] = data[i].position_id;
+						x_Array[i] = data[i].x_point;
+						y_Array[i] = data[i].y_point;
+						value_Array[i] = data[i].value;
+					}
+					createHeatPoints();
+					spinner.spin();
+				}
+			});
+		}
+	}
+	function createHeatPoints(){
+		clearHeatPoints();
+    	var heatPoints = [];
+        for(var i=0;i<id_Array.length;i++){
+        	heatPoints[i] = new SuperMap.Feature.Vector(
+        			new SuperMap.Geometry.Point(
+        			    x_Array[i],
+        				y_Array[i]
+        			),
+        			{
+        				"value":value_Array[i], 
+        				"geoRadius":100
+        			}
+        	);
+        }
+        heatMapLayer.addFeatures(heatPoints);
+        isCreated=true;
+    }
+    function clearHeatPoints(){
+    	heatMapLayer.removeAllFeatures();
+    }
+    
+    function loadData(){ 
+    	getData();
+    	var dateValue = Math.abs((start_dateObj - end_dateObj))/(1000*60*60*24)+1;
+    	$(function() {
+    	    $( "#slider-range-min_day" ).slider({
+    	      range: "min",
+    	      value: 1,
+    	      min: 1,
+    	      max: dateValue,
+    	      slide: function( event, ui ) {
+    	        $( "#amount_day" ).val( ui.value );
+    	        current_day=ui.value;
+    	        getData();
+    	      }
+    	    });
+    	 });
+    	$(function() {
+    	    $( "#slider-range-min_hour" ).slider({
+    	      range: "min",
+    	      value: 0,
+    	      min: 0,
+    	      max: 23,
+    	      slide: function( event, ui ) {
+    	        $( "#amount_hour" ).val( ui.value );
+    	        current_hour=ui.value;
+    	        getData();
+    	      }
+    	    });
+    	 });
+    	$(function() {
+    	    $( "#slider-range-min_frames" ).slider({
+    	      range: "min",
+    	      value: 0,
+    	      min: 0,
+    	      max: 119,
+    	      slide: function( event, ui ) {
+    	        $( "#amount_frames" ).val( getTime(ui.value) );
+    	        current_frame=ui.value;
+    	        current_minsec=getTime(ui.value);
+    	        getData();
+    	      }
+    	    });
+    	});
+    }
+  function getTime(value){
+	  if(value%2==0){
+		  var result=parseInt(value/2)+":00";
+		  return result;
+	  }else{
+		  var result=parseInt(value/2)+":30";
+		  return result;
+	  }
+  }
+  function autoPlay(state){
+	  if(isCreated){
+		  isCreated=false;
+		  if(state=="day"){
+			  var value=$("#slider-range-min_day").slider("value");
+			  var max = $("#slider-range-min_day").slider("option", "max"); 
+			  var min = $("#slider-range-min_day").slider("option", "min"); 
+			  if(value<max){
+				  
+	  	          current_day=++value;
+	  	          getData("day",value);
+
+			  }else if(value==max){
+				 
+	  	          current_day=min;
+	  	          getData("day",min);
+// 	  	          $("#slider-range-min_day").slider("value",min);
+// 				  $( "#amount_day" ).val( min );
+			  }
+		  }
+		  if(state=="hour"){
+			  var value=$("#slider-range-min_hour").slider("value");
+			  var max = $("#slider-range-min_hour").slider("option", "max"); 
+			  var min = $("#slider-range-min_hour").slider("option", "min"); 
+			  if(value<max){
+				  
+	  	          current_hour=++value;
+	  	          getData("hour",value);
+	  	        
+			  }else if(value==max){
+				  
+	  	          current_hour=min;
+	  	          getData("hour",value);
+// 	  	          $("#slider-range-min_hour").slider("value",min);
+// 				  $( "#amount_hour" ).val(min);
+			  }
+		  }
+		  if(state=="frames"){
+			  var value=$("#slider-range-min_frames").slider("value");
+			  var max = $("#slider-range-min_frames").slider("option", "max"); 
+			  var min = $("#slider-range-min_frames").slider("option", "min"); 
+			  if(value<max){
+				  
+	  	          current_frame=++value;
+	  	          current_minsec=getTime(value);
+	  	          getData("frames",value);
+	  	          
+			  }else if(value==max){
+				  
+	  	          current_frame=min;
+	  	          current_minsec=getTime(min);
+	  	          getData("frames",min);
+// 	  	          $("#slider-range-min_frames").slider("value",min);
+// 				  $( "#amount_frames" ).val( getTime(min) );
+			  }
+		  }
+	  }
+		  
+  }
+  var interval_day,interval_hour,interval_frame;
+  function dayPlay(){
+	  if(interval_day==null){
+		  interval_day=window.setInterval("autoPlay('day')", 200);
+	  }else{
+		  clearInterval(interval_day);
+		  interval_day=null;
+	  }
+  }
+  function hourPlay(){
+	  if(interval_hour==null){
+		  interval_hour=window.setInterval("autoPlay('hour')", 200);
+	  }else{
+		  clearInterval(interval_hour);
+		  interval_hour=null;
+	  }
+  }
+  function framePlay(){
+	  if(interval_frame==null){
+		  interval_frame=window.setInterval("autoPlay('frames')", 200);
+	  }else{
+		  clearInterval(interval_frame);
+		  interval_frame=null;
+	  }
+  }
+</script>
+</head>
+<body onload="init()">
+<div id="container" style="width:100%;height:400px">
+<div id="utils" style="float:left;width:25%;height:100%;border-style:ridge;border-color:#3893d3;border-width:5px;">
+<div id="date" style="width:100%;padding-left:0px">
+       起始日期：<input type="text" id="start_datepicker" name="start_date"><br>
+       结束日期：<input type="text" id="end_datepicker" name="end_date"><br>
+  <button onclick="loadData()">加载</button>
+</div>
+<div id="slider" style="width:100%;">
+<p>
+  <label for="amount_day">&nbsp;&nbsp;&nbsp;day:</label>
+  <input type="text" id="amount_day" style="border:0; color:#f6931f; font-weight:bold;" value="1">
+  <button onclick="dayPlay()">播放/停止</button>
+</p>
+<div id="slider-range-min_day" style="width:90%; margin-left:10px;"></div>
+<p>
+  <label for="amount_hour">&nbsp;&nbsp;hour:</label>
+  <input type="text" id="amount_hour" style="border:0; color:#f6931f; font-weight:bold;" value="0">
+  <button onclick="hourPlay()">播放/停止</button>
+</p>
+<div id="slider-range-min_hour" style="width:90%; margin-left:10px;"></div>
+<p>
+  <label for="amount_frames">mm:ss :</label>
+  <input type="text" id="amount_frames" style="border:0; color:#f6931f; font-weight:bold;" value="00:00">
+  <button onclick="framePlay()">播放/停止</button>
+</p>
+<div id="slider-range-min_frames" style="width:90%; margin-left:10px;"></div>
+</div>
+</div>
+<div id="content" style="width:73%;height:400px;float:right;border-style:ridge;border-color:#3893d3;border-width:2px;">
+<div id="map" style="width:100%;height:350px;">
+</div>
+<div id="header" style="float:right;bottom:0;">
+瓦斯浓度过高预警：<button style="background-color: #F04A06">1%</button>
+</div>
+</div>
+<div id="spinner" style="margin: 0 auto;width:50px;padding-top:150px"></div>
+</div>
+</body>
+</html>

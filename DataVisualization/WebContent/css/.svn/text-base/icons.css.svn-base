@@ -1,0 +1,135 @@
+.level-one{
+	background-image:url(../images/gis/blue.gif) ! important;
+}
+.level-two{
+	background-image:url(../images/gis/dangersource.gif) ! important;
+}
+.level-three{
+	background-image:url(../images/gis/caseinfo.gif) ! important;
+}
+.level-four{
+	background-image:url(../images/gis/red.gif) ! important;
+}
+.x-tree-node .icon-user{
+	background-image:url(../images/icons/user.gif) ! important;
+}
+.x-tree-node .icon-role{
+	background-image:url(../images/icons/role.gif) ! important;
+}
+.x-tree-node .icon-resource-leaf{
+	background-image:url(../images/icons/resource-leaf.jpg) ! important;
+}
+.x-tree-node .icon-resource{
+	background-image:url(../images/icons/resource.jpg) ! important;
+}
+.x-tree-node .icon-user_role_res_manage{
+	background-image:url(../images/icons/user_role_res_manage.png) ! important;
+}
+.x-tree-node .icon-users{
+	background-image:url(../images/icons/users.png) ! important;
+}
+.x-tree-node .icon-roles{
+	background-image:url(../images/icons/roles.png) ! important;
+}
+.x-tree-node .icon-resources{
+	background-image:url(../images/icons/resources.png) ! important;
+}
+.x-tree-node .icon-department{
+    background: url(../images/icons/catalog.png)  !important;
+}
+.x-tree-node .icon-dangerSource{
+    background: url(../images/icons/dangersource.png) !important;
+}
+.x-tree-node .icon-dsRoot{
+    background: url(../images/icons/warning.gif) !important;
+}
+.x-tree-node .icon-dsType{
+    background: url(../images/icons/dstype.png) no-repeat left center !important;
+}
+.ic_expertLib{
+    background: url(../images/icons/roles.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_SqlTable{
+    background: url(../images/icons/manage.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_Gis{
+    background: url(../images/icons/globe-green.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_grid{
+    background: url(../images/icons/grid.png) no-repeat left center !important;
+    
+}
+.ic_metaCharge{
+    background: url(../images/icons/folder_wrench.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_apply{
+    background: url(../images/icons/import.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_decision{
+    background: url(../images/icons/decision.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_evaluate{
+    background: url(../images/icons/evaluate.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_knowledgeLib{
+    background: url(../images/icons/knowledge.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_dangerData{
+    background: url(../images/icons/importDatasource.gif) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_caseLib{
+    background: url(../images/icons/bo3.gif) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_caseWholeCount{
+    background: url(../images/icons/stat.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_caseDetailCount{
+    background: url(../images/icons/details.gif) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_disposalSchemeLib{
+    background: url(../images/icons/save.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_chartview{
+    background: url(../images/icons/floor.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_view{
+    background: url(../images/icons/checkininfo.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_add{
+    background: url(../images/icons/reserv.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_plugin{
+    background: url(../images/plugin.gif) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_evaluateView{
+    background: url(../images/icons/guestinfo.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.ic_planLib{
+    background: url(../images/icons/documents-text.png) no-repeat left center !important;
+    text-indent:20px;
+}
+.x-date-middle {  
+    padding-top:2px;
+    padding-bottom:2px;  
+
+    width:188px;   
+} 
+.x-grid3-cell-text-visible .x-grid3-cell-inner{overflow:visible;padding:3px 3px 3px 5px;white-space:normal;}

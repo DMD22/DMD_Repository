@@ -8,7 +8,10 @@
 
 Connection conn = DButil.getConnection();
 Statement stmt = conn.createStatement();
-	 ResultSet rs = stmt.executeQuery("select * from gasconcentrationdata");
+String flag=request.getParameter("flag");
+if(flag.equals("center")){
+	String id=request.getParameter("id");
+	ResultSet rs = stmt.executeQuery("select * from gasconcentrationdata where position_id='"+id+"'");
 	 LinkedList<GasconcentrationEntity> gasconcentrationEntityList=new LinkedList<GasconcentrationEntity>();
 	   while(rs.next()){
 		   GasconcentrationEntity gasconcentrationEntity=new GasconcentrationEntity();
@@ -21,4 +24,21 @@ Statement stmt = conn.createStatement();
 	   String json = JSONArray.fromObject(gasconcentrationEntityList).toString();   
 		out.println(json);
 
+}
+else{
+	ResultSet rs = stmt.executeQuery("select * from gasconcentrationdata");
+	 LinkedList<GasconcentrationEntity> gasconcentrationEntityList=new LinkedList<GasconcentrationEntity>();
+	   while(rs.next()){
+		   GasconcentrationEntity gasconcentrationEntity=new GasconcentrationEntity();
+		   gasconcentrationEntity.setId(rs.getInt("id"));
+		   gasconcentrationEntity.setX_point(rs.getDouble("x_point"));
+		   gasconcentrationEntity.setY_point(rs.getDouble("y_point"));
+		   gasconcentrationEntity.setValue(rs.getDouble("value"));
+		   gasconcentrationEntityList.add(gasconcentrationEntity);
+	   }
+	   String json = JSONArray.fromObject(gasconcentrationEntityList).toString();   
+		out.println(json);
+
+}
+	 
 %>

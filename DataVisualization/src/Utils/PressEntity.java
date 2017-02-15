@@ -11,7 +11,7 @@ public class PressEntity {
 	private double value_3;
 	private double value_4;
 	private String date; 
-	private int warning;
+	private int value;
 	
 	public String getDate() {
 		return date;
@@ -67,11 +67,11 @@ public class PressEntity {
 	public void setValue_4(double value_4) {
 		this.value_4 = value_4;
 	}
-	public int getWarning() {
-		return warning;
+	public int getValue() {
+		return value;
 	}
-	public void setWarning(int warning) {
-		this.warning = warning;
+	public void setValue(int value) {
+		this.value = value;
 	}
 	
 }

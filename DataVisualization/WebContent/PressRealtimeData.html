@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <title>压力实时监测</title>
-<link rel="stylesheet" href="../css/jquery-ui.css">
-<link rel="stylesheet" href="../css/style.css">
-<script src="../js/jquery-3.1.1.js"></script>
-<script src="../js/jquery-ui.js"></script>
-<script src="../js/spin.js"></script>
-<script src="../js/SuperMap.Include.js"></script>
+<link rel="stylesheet" href="./css/jquery-ui.css">
+<script src="./js/jquery-3.1.1.js"></script>
+<script src="./js/jquery-ui.js"></script>
+<script src="./js/spin.js"></script>
+<script src="./js/SuperMap.Include.js"></script>
 <script type="text/javascript">
 	//声明变量map、layer、url,markers
 	var map, layer, heatMapLayer, url = "http://192.168.109.207:8090/iserver/services/map-Mining2/rest/maps/road@某矿";
@@ -57,6 +56,7 @@
 			type : 'post',
 			url : 'GetPressRealtimeData.jsp',
 			dataType : 'json',
+			data : {flag:"realtime"},
 			success : function(data) {
 				for (var i = 0; i < data.length; i++) {
 					id_Array[i] = data[i].id;
@@ -66,7 +66,7 @@
 					value_2_Array[i] = data[i].value_2;
 					value_3_Array[i] = data[i].value_3;
 					value_4_Array[i] = data[i].value_4;
-					warning_Array[i] = data[i].warning;
+					warning_Array[i] = data[i].value;
 				}
 				//spinner.spin();
 				

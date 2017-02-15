@@ -8,6 +8,22 @@
 
 Connection conn = DButil.getConnection();
 Statement stmt = conn.createStatement();
+String flag=request.getParameter("flag");
+if(flag.equals("center")){
+	String id=request.getParameter("id");
+	ResultSet rs = stmt.executeQuery("select * from temperaturedata where position_id='"+id+"'");
+	 LinkedList<TemperatureEntity> temperatureEntityList=new LinkedList<TemperatureEntity>();
+	   while(rs.next()){
+		   TemperatureEntity temperatureEntity=new TemperatureEntity();
+		   temperatureEntity.setId(rs.getInt("id"));
+		   temperatureEntity.setX_point(rs.getDouble("x_point"));
+		   temperatureEntity.setY_point(rs.getDouble("y_point"));
+		   temperatureEntity.setValue(rs.getDouble("value"));
+		   temperatureEntityList.add(temperatureEntity);
+	   }
+	   String json = JSONArray.fromObject(temperatureEntityList).toString();   
+		out.println(json);
+}else{
 	 ResultSet rs = stmt.executeQuery("select * from temperaturedata");
 	 LinkedList<TemperatureEntity> temperatureEntityList=new LinkedList<TemperatureEntity>();
 	   while(rs.next()){
@@ -20,5 +36,7 @@ Statement stmt = conn.createStatement();
 	   }
 	   String json = JSONArray.fromObject(temperatureEntityList).toString();   
 		out.println(json);
+}
+	
 
 %>

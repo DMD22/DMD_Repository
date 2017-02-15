@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <title>温度实时监测</title>
-<link rel="stylesheet" href="../css/jquery-ui.css">
-<link rel="stylesheet" href="../css/style.css">
-<script src="../js/jquery-3.1.1.js"></script>
-<script src="../js/jquery-ui.js"></script>
-<script src="../js/spin.js"></script>
-<script src="../js/SuperMap.Include.js"></script>
+<link rel="stylesheet" href="./css/jquery-ui.css">
+<script src="./js/jquery-3.1.1.js"></script>
+<script src="./js/jquery-ui.js"></script>
+<script src="./js/spin.js"></script>
+<script src="./js/SuperMap.Include.js"></script>
 <script type="text/javascript">
 	//声明变量map、layer、url
 	var map, layer, heatMapLayer, url = "http://192.168.109.207:8090/iserver/services/map-Mining2/rest/maps/road@某矿";
@@ -49,7 +48,7 @@
 		markers = new SuperMap.Layer.Markers("Markers");
 		size = new SuperMap.Size(15, 20);
 		offset = new SuperMap.Pixel(-(size.w / 2), -size.h);
-		icon = new SuperMap.Icon('../image/marker.png', size, offset);
+		icon = new SuperMap.Icon('./image/marker.png', size, offset);
 	}
 	function addLayer() {
 		//将Layer图层加载到Map对象上
@@ -62,6 +61,7 @@
 			type : 'post',
 			url : 'GetTemperatureRealtimeData.jsp',
 			dataType : 'json',
+			data : {flag:"realtime"},
 			success : function(data) {
 				for (var i = 0; i < data.length; i++) {
 					id_Array[i] = data[i].id;

@@ -19,7 +19,7 @@
 		 pressEntity.setX_point(rs.getDouble("x_point"));
 		 pressEntity.setY_point(rs.getDouble("y_point"));
 		 pressEntity.setDate(rs.getString("date"));
-		 pressEntity.setWarning(rs.getInt("value"));
+		 pressEntity.setValue(rs.getInt("value"));
 		 pressEntityList.add(pressEntity);
 	 }
 	 String json = JSONArray.fromObject(pressEntityList).toString();   

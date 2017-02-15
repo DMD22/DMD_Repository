@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>监控中心</title>
+<link rel="stylesheet" href="./css/jquery-ui.css">
+<script src="./js/jquery-3.1.1.js"></script>
+<script src="./js/jquery-ui.js"></script>
+<script src="./js/spin.js"></script>
+<script src="./js/highcharts.js"></script>
+<script src="./js/highcharts-more.js"></script>
+<script src="./js/solid-gauge.js"></script>
+<script src="./js/exporting.js"></script>
+</head>
+<body onload="loadData()">
+	<div id="content"
+		style="width: 100%; height: 800px; float: left; border-style: ridge; border-color: #3893d3; border-width: 3px;">
+		<div style="margin: 0 auto; width: 300px;">
+			监控点：<input type="text" id="select_id" name="select_id">
+			<button onclick="getData()">加载</button>
+			<br>
+		</div>
+		<div id="container_temperature"
+			style="min-width: 400px; max-width: 400px; height: 250px; float: left; margin-left:10px; "></div>
+		<div id="container_humidity"
+			style="min-width: 400px; max-width: 400px; height: 250px; float: left; margin-left:10px;"></div>
+		<div id="container_fanpressure"
+			style="min-width: 400px; max-width: 400px; height: 250px; float: left; margin-left:10px;"></div>
+		<div id="container_gasconcentration"
+			style="min-width: 400px; max-width: 400px; height: 250px; float: left; margin-left:10px;"></div>
+		<div id="container_sumplevel"
+			style="min-width: 400px; max-width: 400px; height: 250px; float: left; margin-left:10px;"></div>
+		<div id="container_press"
+			style="min-width: 400px; max-width: 400px; height: 250px; float: left; margin-left:10px;"></div>
+	</div>
+	<script>
+		var value_temperature=0, value_humidity=0, value_fanpressure=2995, value_gasconcentration=0, value_sumplevel=0, value_press_1=20, value_press_2=20, value_press_3=20, value_press_4=20,value_press=0;
+		function loadData() {
+			loadTempetarureData();
+			loadHumidityData();
+			loadFanpressureData();
+			loadGasconcentrationData();
+			loadSumplevelData();
+			loadPressData();
+		}
+		function getData() {
+			var select_id = document.getElementById("select_id").value;
+			$.ajax({
+				type : 'post',
+				url : 'GetTemperatureRealtimeData.jsp',
+				data : {
+					id : select_id,
+					flag : "center"
+				},
+				dataType : 'json',
+				success : function(data) {
+					for (var i = 0; i < data.length; i++) {
+						value_temperature = data[i].value;
+					}
+				}
+			});
+			$.ajax({
+				type : 'post',
+				url : 'GetHumidityRealtimeData.jsp',
+				data : {
+					id : select_id,
+					flag : "center"
+				},
+				dataType : 'json',
+				success : function(data) {
+					for (var i = 0; i < data.length; i++) {
+						value_humidity = data[i].value;
+					}
+				}
+			});
+			$.ajax({
+				type : 'post',
+				url : 'GetGasconcentrationRealtimeData.jsp',
+				data : {
+					id : select_id,
+					flag : "center"
+				},
+				dataType : 'json',
+				success : function(data) {
+					for (var i = 0; i < data.length; i++) {
+						value_gasconcentration = data[i].value;
+					}
+				}
+			});
+			$.ajax({
+				type : 'post',
+				url : 'GetFanpressureRealtimeData.jsp',
+				data : {
+					id : select_id,
+					flag : "center"
+				},
+				dataType : 'json',
+				success : function(data) {
+					for (var i = 0; i < data.length; i++) {
+						value_fanpressure = data[i].value;
+					}
+				}
+			});
+			$.ajax({
+				type : 'post',
+				url : 'GetSumplevelRealtimeData.jsp',
+				data : {
+					id : select_id,
+					flag : "center"
+				},
+				dataType : 'json',
+				success : function(data) {
+					for (var i = 0; i < data.length; i++) {
+						value_sumplevel = data[i].value;
+					}
+				}
+			});
+			$.ajax({
+				type : 'post',
+				url : 'GetPressRealtimeData.jsp',
+				data : {
+					id : select_id,
+					flag : "center"
+				},
+				dataType : 'json',
+				success : function(data) {
+					for (var i = 0; i < data.length; i++) {
+						value_press_1 = data[i].value_1;
+						value_press_2 = data[i].value_2;
+						value_press_3 = data[i].value_3;
+						value_press_4 = data[i].value_4;
+						value_press = data[i].value;
+					}
+				}
+			});
+			loadData();
+		}
+		function loadTempetarureData() {
+			$(document).ready(function() {
+				var chart = {
+					type : 'gauge',
+					plotBackgroundColor : null,
+					plotBackgroundImage : null,
+					plotBorderWidth : 0,
+					plotShadow : false
+				};
+				var exporting={
+                    enabled:false
+                };
+                var credits= {
+                    enabled: false
+                };
+				var title = {
+					text : '温度表'
+				};
+
+				var pane = {
+					startAngle : -150,
+					endAngle : 150,
+					background : [ {
+						backgroundColor : {
+							linearGradient : {
+								x1 : 0,
+								y1 : 0,
+								x2 : 0,
+								y2 : 1
+							},
+							stops : [ [ 0, '#FFF' ], [ 1, '#333' ] ]
+						},
+						borderWidth : 0,
+						outerRadius : '109%'
+					}, {
+						backgroundColor : {
+							linearGradient : {
+								x1 : 0,
+								y1 : 0,
+								x2 : 0,
+								y2 : 1
+							},
+							stops : [ [ 0, '#333' ], [ 1, '#FFF' ] ]
+						},
+						borderWidth : 1,
+						outerRadius : '107%'
+					}, {
+					// default background
+					}, {
+						backgroundColor : '#DDD',
+						borderWidth : 0,
+						outerRadius : '105%',
+						innerRadius : '103%'
+					} ]
+				};
+
+				// the value axis
+				var yAxis = {
+					min : 0,
+					max : 200,
+
+					minorTickInterval : 'auto',
+					minorTickWidth : 1,
+					minorTickLength : 10,
+					minorTickPosition : 'inside',
+					minorTickColor : '#666',
+
+					tickPixelInterval : 30,
+					tickWidth : 2,
+					tickPosition : 'inside',
+					tickLength : 10,
+					tickColor : '#666',
+					labels : {
+						step : 2,
+						rotation : 'auto'
+					},
+					title : {
+						text : '℃'
+					},
+					plotBands : [ {
+						from : 0,
+						to : 10,
+						color : '#DDDF0D' // yellow
+					}, {
+						from : 10,
+						to : 28,
+						color : '#55BF3B' // green
+					}, {
+						from : 28,
+						to : 200,
+						color : '#DF5353' // red
+					} ]
+				};
+
+				var series = [ {
+					name : '温度',
+					data : [ 0 ],
+					tooltip : {
+						valueSuffix : ' ℃'
+					}
+				} ];
+
+				var json = {};
+				json.chart = chart;
+				json.title = title;
+				json.pane = pane;
+				json.yAxis = yAxis;
+				json.series = series;
+				json.exporting=exporting;
+				json.credits=credits;
+				// Add some life
+				var chartFunction = function(chart) {
+					if (!chart.renderer.forExport) {
+						setInterval(function() {
+							var point = chart.series[0].points[0];
+							point.update(value_temperature);
+						}, 700);
+					}
+				};
+
+				$('#container_temperature').highcharts(json, chartFunction);
+			});
+		}
+		function loadHumidityData() {
+
+			$(document)
+					.ready(
+							function() {
+								var chart = {
+									type : 'solidgauge'
+								};
+								var title = null;
+
+								var pane = {
+									center : [ '50%', '85%' ],
+									size : '140%',
+									startAngle : -90,
+									endAngle : 90,
+									background : {
+										backgroundColor : (Highcharts.theme && Highcharts.theme.background2)
+												|| '#EEE',
+										innerRadius : '60%',
+										outerRadius : '100%',
+										shape : 'arc'
+									}
+								};
+
+								var tooltip = {
+									enabled : false
+								};
+
+								// the value axis
+								var yAxis = {
+									stops : [ [ 0.2, '#DDDF0D' ], // yellow
+									[ 0.7, '#55BF3B' ], // green
+									[ 1, '#DF5353' ] // red
+									],
+									lineWidth : 0,
+									minorTickInterval : null,
+									tickPixelInterval : 400,
+									tickWidth : 0,
+									title : {
+										y : -70
+									},
+									labels : {
+										y : 16
+									},
+									min : 40,
+									max : 70,
+									title : {
+										text : '湿度'
+									}
+								};
+
+								var plotOptions = {
+									solidgauge : {
+										dataLabels : {
+											y : 5,
+											borderWidth : 0,
+											useHTML : true,
+											allowOverlap : true
+										}
+									}
+								};
+
+								var exporting={
+					                    enabled:false
+					                };
+					                var credits= {
+					                    enabled: false
+					                };
+
+								var series = [ {
+									name : '湿度',
+									data : [ 0 ],
+									dataLabels : {
+										format : '<div style="width:30px;text-align:center"><span style="font-size:25px;color:'
+												+ ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black')
+												+ '">{y}</span><br/>'
+												+ '<span style="font-size:12px;color:silver">%</span></div>'
+									},
+									tooltip : {
+										valueSuffix : '%'
+									}
+								} ];
+
+								var json = {};
+								json.chart = chart;
+								json.title = title;
+								json.pane = pane;
+								json.tooltip = tooltip;
+								json.yAxis = yAxis;
+								json.credits = credits;
+								json.exporting=exporting;
+								json.series = series;
+								$('#container_humidity').highcharts(json);
+
+								var chartFunction = function() {
+									// Speed
+									var chart = $('#container_humidity')
+											.highcharts();
+									var point;
+									var newVal;
+									if (chart) {
+										point = chart.series[0].points[0];
+										point.update(value_humidity);
+									}
+
+								};
+
+								// Bring life to the dials
+								setInterval(chartFunction, 700);
+							});
+		}
+		function loadFanpressureData() {
+			$(document)
+					.ready(
+							function() {
+								var chart = {
+									type : 'gauge',
+									plotBackgroundColor : null,
+									plotBackgroundImage : null,
+									plotBorderWidth : 0,
+									plotShadow : false
+								};
+								var title = {
+									text : '负压表'
+								};
+								var exporting={
+					                    enabled:false
+					                };
+					                var credits= {
+					                    enabled: false
+					                };
+								var pane = {
+									startAngle : -150,
+									endAngle : 150,
+									background : [
+											{
+												backgroundColor : {
+													linearGradient : {
+														x1 : 0,
+														y1 : 0,
+														x2 : 0,
+														y2 : 1
+													},
+													stops : [ [ 0, '#FFF' ],
+															[ 1, '#333' ] ]
+												},
+												borderWidth : 0,
+												outerRadius : '109%'
+											},
+											{
+												backgroundColor : {
+													linearGradient : {
+														x1 : 0,
+														y1 : 0,
+														x2 : 0,
+														y2 : 1
+													},
+													stops : [ [ 0, '#333' ],
+															[ 1, '#FFF' ] ]
+												},
+												borderWidth : 1,
+												outerRadius : '107%'
+											}, {
+											// default background
+											}, {
+												backgroundColor : '#DDD',
+												borderWidth : 0,
+												outerRadius : '105%',
+												innerRadius : '103%'
+											} ]
+								};
+
+								// the value axis
+								var yAxis = {
+									min : 2995,
+									max : 3005,
+
+									minorTickInterval : 'auto',
+									minorTickWidth : 1,
+									minorTickLength : 10,
+									minorTickPosition : 'inside',
+									minorTickColor : '#666',
+
+									tickPixelInterval : 30,
+									tickWidth : 2,
+									tickPosition : 'inside',
+									tickLength : 10,
+									tickColor : '#666',
+									labels : {
+										step : 2,
+										rotation : 'auto'
+									},
+									title : {
+										text : 'Pa'
+									},
+									plotBands : [ {
+										from : 2995,
+										to : 3002,
+										color : '#55BF3B' // green
+									}, {
+										from : 3002,
+										to : 3005,
+										color : '#DF5353' // red
+									} ]
+								};
+
+								var series = [ {
+									name : '风机负压',
+									data : [ 2995 ],
+									tooltip : {
+										valueSuffix : ' Pa'
+									}
+								} ];
+
+								var json = {};
+								json.chart = chart;
+								json.title = title;
+								json.pane = pane;
+								json.yAxis = yAxis;
+								json.series = series;
+								json.exporting=exporting;
+								json.credits=credits;
+								// Add some life
+								var chartFunction = function(chart) {
+									if (!chart.renderer.forExport) {
+										setInterval(
+												function() {
+													var point = chart.series[0].points[0];
+													point.update(value_fanpressure);
+												}, 700);
+									}
+								};
+
+								$('#container_fanpressure').highcharts(json,
+										chartFunction);
+							});
+		}
+		function loadGasconcentrationData() {
+			$(document)
+					.ready(
+							function() {
+								var chart = {
+									type : 'solidgauge'
+								};
+								var title = null;
+
+								var pane = {
+									center : [ '50%', '85%' ],
+									size : '140%',
+									startAngle : -90,
+									endAngle : 90,
+									background : {
+										backgroundColor : (Highcharts.theme && Highcharts.theme.background2)
+												|| '#EEE',
+										innerRadius : '60%',
+										outerRadius : '100%',
+										shape : 'arc'
+									}
+								};
+
+								var tooltip = {
+									enabled : false
+								};
+
+								// the value axis
+								var yAxis = {
+									stops : [ [ 0.6, '#55BF3B' ], // green
+									[ 0.7, '#DF5353' ] // red
+									],
+									lineWidth : 0,
+									minorTickInterval : null,
+									tickPixelInterval : 400,
+									tickWidth : 0,
+									title : {
+										y : -70
+									},
+									labels : {
+										y : 16
+									},
+									min : 0,
+									max : 1.5,
+									title : {
+										text : '瓦斯浓度'
+									}
+								};
+
+								var plotOptions = {
+									solidgauge : {
+										dataLabels : {
+											y : 5,
+											borderWidth : 0,
+											useHTML : true,
+											allowOverlap : true
+										}
+									}
+								};
+
+								var exporting={
+					                    enabled:false
+					                };
+					                var credits= {
+					                    enabled: false
+					                };
+
+								var series = [ {
+									name : '瓦斯浓度',
+									data : [ 0 ],
+									dataLabels : {
+										format : '<div style="width:30px;text-align:center"><span style="font-size:25px;color:'
+												+ ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black')
+												+ '">{y}</span><br/>'
+												+ '<span style="font-size:12px;color:silver">%</span></div>'
+									},
+									tooltip : {
+										valueSuffix : '%'
+									}
+								} ];
+
+								var json = {};
+								json.chart = chart;
+								json.title = title;
+								json.pane = pane;
+								json.tooltip = tooltip;
+								json.yAxis = yAxis;
+								json.credits = credits;
+								json.exporting=exporting;
+								json.series = series;
+								$('#container_gasconcentration').highcharts(
+										json);
+
+								var chartFunction = function() {
+									// Speed
+									var chart = $('#container_gasconcentration')
+											.highcharts();
+									var point;
+									if (chart) {
+										point = chart.series[0].points[0];
+										point.update(value_gasconcentration);
+									}
+
+								};
+
+								// Bring life to the dials
+								setInterval(chartFunction, 700);
+							});
+		}
+		function loadSumplevelData() {
+			$(document)
+					.ready(
+							function() {
+								var chart = {
+									type : 'solidgauge'
+								};
+								var title = null;
+
+								var pane = {
+									center : [ '50%', '85%' ],
+									size : '140%',
+									startAngle : -90,
+									endAngle : 90,
+									background : {
+										backgroundColor : (Highcharts.theme && Highcharts.theme.background2)
+												|| '#EEE',
+										innerRadius : '60%',
+										outerRadius : '100%',
+										shape : 'arc'
+									}
+								};
+
+								var tooltip = {
+									enabled : false
+								};
+
+								// the value axis
+								var yAxis = {
+									stops : [ [ 0.5, '#55BF3B' ], // green
+									[ 0.6, '#DF5353' ] // red
+									],
+									lineWidth : 0,
+									minorTickInterval : null,
+									tickPixelInterval : 400,
+									tickWidth : 0,
+									title : {
+										y : -70
+									},
+									labels : {
+										y : 16
+									},
+									min : 0,
+									max : 10,
+									title : {
+										text : 'level'
+									}
+								};
+
+								var plotOptions = {
+									solidgauge : {
+										dataLabels : {
+											y : 5,
+											borderWidth : 0,
+											useHTML : true,
+											allowOverlap : true
+										}
+									}
+								};
+
+								var exporting={
+					                    enabled:false
+					            };
+								var exporting={
+					                    enabled:false
+					                };
+					                var credits= {
+					                    enabled: false
+					                };
+								var series = [ {
+									name : 'level',
+									data : [ 0 ],
+									dataLabels : {
+										format : '<div style="width:30px;text-align:center"><span style="font-size:25px;color:'
+												+ ((Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black')
+												+ '">{y}</span><br/>'
+												+ '<span style="font-size:12px;color:silver">米</span></div>'
+									},
+									tooltip : {
+										valueSuffix : '米'
+									}
+								} ];
+
+								var json = {};
+								json.chart = chart;
+								json.title = title;
+								json.pane = pane;
+								json.tooltip = tooltip;
+								json.yAxis = yAxis;
+								json.credits = credits;
+								json.exporting=exporting;
+								json.series = series;
+								$('#container_sumplevel').highcharts(json);
+
+								var chartFunction = function() {
+									// Speed
+									var chart = $('#container_sumplevel')
+											.highcharts();
+									var point;
+									if (chart) {
+										point = chart.series[0].points[0];
+										point.update(value_sumplevel);
+									}
+
+								};
+
+								// Bring life to the dials
+								setInterval(chartFunction, 700);
+							});
+		}
+		function loadPressData() {
+			$(document)
+			.ready(
+					function() {
+						var chart= {
+				            polar: true,
+				            type: 'line'
+				        };
+				        var title= {
+				            text: '压力数据',
+				            x: -80
+				        };
+				        var pane= {
+				            size: '80%'
+				        };
+				        var xAxis= {
+				            categories: ['A', 'B', 'C', 'D'],
+				            tickmarkPlacement: 'on',
+				            lineWidth: 0
+				        };
+				        var yAxis= {
+				            gridLineInterpolation: 'polygon',
+				            lineWidth: 0,
+				            min: 0
+				        };
+				        var tooltip= {
+				            shared: true,
+				            pointFormat: '<span style="color:{series.color}">{series.name}: <b>{point.y}</b><br/>'
+				        };
+				        var legend= {
+				            align: 'right',
+				            verticalAlign: 'top',
+				            y: 70,
+				            layout: 'vertical'
+				        };
+				        var series= [{
+				            name: '压力数据',
+				            data: [0,0,0,0],
+				            pointPlacement: 'on'
+				        }];
+				        var exporting={
+			                    enabled:false
+			            };
+			            var credits= {
+			                    enabled: false
+			            };
+						var json = {};
+						json.chart = chart;
+						json.title = title;
+						json.pane = pane;
+						json.legend= legend;
+						json.tooltip = tooltip;
+						json.xAxis = xAxis;
+						json.yAxis = yAxis;
+						json.credits = credits;
+						json.exporting=exporting;
+						json.series = series;
+						$('#container_press').highcharts(json);
+						var chartFunction = function() {
+							var chart = $('#container_press').highcharts();
+							if (chart) {
+								var point_1 = chart.series[0].points[0];
+								point_1.update(value_press_1);
+								var point_2 = chart.series[0].points[1];
+								point_2.update(value_press_2);
+								var point_3 = chart.series[0].points[2];
+								point_3.update(value_press_3);
+								var point_4 = chart.series[0].points[3];
+								point_4.update(value_press_4);
+							}
+						};
+						setInterval(chartFunction, 700);
+						
+			});
+		}
+	</script>
+</body>
+</html>
